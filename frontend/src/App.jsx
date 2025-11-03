@@ -1,10 +1,6 @@
+import LandingPage from "./pages/LandingPage";
 function App() {
-
-  return (
-    <>
-      <h1>Farmers and Fishermen Intelligent Support Hub</h1>
-    </>
-  )
+  return <LandingPage />;
 }
+export default App;
 
-export default App
