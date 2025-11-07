@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',  # optional for blacklist
     'corsheaders',
     # Created Apps
-    # "accounts.apps.AccountsConfig",
+    "accounts.apps.AccountsConfig",
 ]
 
 REST_FRAMEWORK = {
@@ -91,6 +91,7 @@ CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', cast=bool)
 CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', cast=bool)
 
 ROOT_URLCONF = 'config.urls'
+AUTH_USER_MODEL = 'accounts.User'
 
 TEMPLATES = [
     {
