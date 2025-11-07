@@ -10,7 +10,7 @@ const Hero = () => {
   return (
     <section
       id="home"
-      className="relative w-full min-h-screen flex flex-col justify-between bg-gradient-to-br from-blue-50 via-white to-blue-100 overflow-hidden pt-24 md:pt-32"
+      className="relative w-full min-h-screen flex flex-col justify-between bg-gradient-to-br from-blue-50 via-white to-blue-100 overflow-hidden pt-16 md:pt-24"
     >
       {/* Background Image (Static on scroll) */}
       <div
@@ -34,7 +34,7 @@ const Hero = () => {
           <div className="absolute w-[550px] h-[550px] bg-gradient-to-br from-blue-200/70 to-blue-100/30 blur-3xl rounded-[55%_45%_35%_65%_/_60%_30%_70%_40%] animate-pulse -z-10"></div>
 
           {/* Curved Lake-Shaped Container */}
-          <div className="relative w-[90%] md:w-[520px] overflow-hidden rounded-t-[220px] rounded-br-[220px] rounded-bl-[100px] shadow-2xl">
+          <div className="relative w-[90%] md:w-[700px] overflow-hidden rounded-t-[220px] rounded-br-[220px] rounded-bl-[100px] shadow-2xl">
             <img
               src={heroImg}
               alt="Fish farmer illustration"

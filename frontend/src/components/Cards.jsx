@@ -1,25 +1,33 @@
-import { motion } from "framer-motion";
-import { Sprout, Fish, ShoppingBag } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sprout, Fish, ShoppingBag, X } from "lucide-react";
+import RegistrationModal from "./registration/RegistrationModal";
 
 const JoinCards = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+
   const cards = [
     {
       title: "Aspiring Farmer",
       desc: "Kickstart your aquaculture journey with expert mentorship and digital learning tools.",
       icon: <Sprout className="text-blue-700" size={28} />,
       btn: "Join as Aspiring Farmer",
+      role: "aspiring-farmer",
     },
     {
       title: "Fish Farmer",
       desc: "Access intelligent farm analytics, disease prediction, and sustainable practices.",
       icon: <Fish className="text-blue-700" size={28} />,
       btn: "Join as Fish Farmer",
+      role: "farmer",
     },
     {
       title: "Buyer / Seller",
       desc: "Engage in transparent digital trade connecting verified suppliers and buyers.",
       icon: <ShoppingBag className="text-blue-700" size={28} />,
       btn: "Join as Buyer / Seller",
+      role: "buyer",
     },
   ];
 
@@ -43,7 +51,8 @@ const JoinCards = () => {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="text-gray-700 mb-12 max-w-2xl mx-auto"
         >
-          Join us as an aspiring farmer, fish farmer, or marketplace trader and explore a smarter, sustainable future for aquaculture.
+          Join us as an aspiring farmer, fish farmer, or marketplace trader and
+          explore a smarter, sustainable future for aquaculture.
         </motion.p>
 
         {/* Cards */}
@@ -65,13 +74,32 @@ const JoinCards = () => {
                 {card.title}
               </h3>
               <p className="text-gray-600 text-sm mb-6">{card.desc}</p>
-              <button className="px-5 py-2 bg-blue-700 text-white text-sm rounded-full font-medium hover:bg-blue-800 transition cursor-pointer">
+              <button
+                onClick={() => {
+                  setSelectedRole(card.role);
+                  setShowModal(true);
+                  console.log(card.role)
+                }}
+                className="px-5 py-2 bg-blue-700 text-white text-sm rounded-full font-medium hover:bg-blue-800 transition cursor-pointer"
+              >
                 {card.btn}
               </button>
             </div>
           ))}
         </motion.div>
       </div>
+
+      {/* Registration Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <RegistrationModal
+            selectedRole={selectedRole}
+            open={showModal}   
+            onClose={() => setShowModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
     </section>
   );
 };

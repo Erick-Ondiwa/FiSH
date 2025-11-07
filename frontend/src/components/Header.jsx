@@ -8,7 +8,7 @@ const Header = () => {
 
   return (
     <header
-      className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-white/30 
+      className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-gradient-to-b from-blue-950 via-blue-900 to-blue-800 
                  border-b border-white/20 shadow-md transition-all duration-500"
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center py-4 px-6 md:px-12">
@@ -19,16 +19,16 @@ const Header = () => {
             alt="FiSH Logo"
             className="w-10 h-10 object-contain drop-shadow-sm"
           />
-          <h1 className="text-2xl font-extrabold text-blue-800 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-white-800 tracking-tight">
             FiSH
-            <span className="block text-xs text-blue-600 font-medium">
+            <span className="block text-xs text-white-600 font-medium">
               Intelligent Support Hub
             </span>
           </h1>
         </div>
 
         {/* Desktop Navbar */}
-        <nav className="hidden md:flex space-x-10 text-gray-800 font-medium">
+        <nav className="hidden md:flex space-x-10 text-white-800 font-medium">
           {[
             { name: "Home", link: "#home" },
             { name: "About", link: "#about" },
