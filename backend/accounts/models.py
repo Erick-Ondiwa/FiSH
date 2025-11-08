@@ -6,7 +6,7 @@ from django.utils import timezone
 import uuid
 
 # -------------------------------------------------------
-# 1️⃣ Base Custom User Model
+# 1️ Base Custom User Model
 # -------------------------------------------------------
 
 class User(AbstractUser):
@@ -46,7 +46,7 @@ class User(AbstractUser):
         return f"{self.get_full_name()} ({self.role})"
 
 # -------------------------------------------------------
-# 2️⃣ Farmer Profile Model (Aspiring or Existing)
+# Farmer Profile Model (Aspiring or Existing)
 # -------------------------------------------------------
 
 class FarmerProfile(models.Model):

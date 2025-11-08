@@ -20,9 +20,12 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
 
   const [formData, setFormData] = useState({
     full_name: "",
+    first_name: "",
+    last_name: "",
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     county: "",
     subcounty: "",
     place_of_farming: "",
@@ -38,9 +41,12 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       setUserId(null);
       setFormData({
         full_name: "",
+        first_name: "",
+        last_name: "",
         email: "",
         phone: "",
         password: "",
+        confirmPassword: "",
         county: "",
         subcounty: "",
         place_of_farming: "",
@@ -62,8 +68,15 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       if (!formData.full_name.trim()) e.full_name = "Full name is required.";
       if (!formData.email.match(/^\S+@\S+\.\S+$/)) e.email = "Valid email required.";
       if (!formData.phone.trim()) e.phone = "Phone is required.";
-      if (!formData.password || formData.password.length < 6)
-        e.password = "Minimum 6 characters required.";
+      if (!formData.password || formData.password.length < 8)
+        e.password = "Password must be at least 8 characters long.";
+
+      if (/^\d+$/.test(formData.password))
+        e.password = "Password cannot be entirely numeric.";
+
+      if (formData.password !== formData.confirmPassword)
+        e.confirmPassword = "Passwords do not match";
+
     } else if (step === 2) {
       if (!formData.county.trim()) e.county = "County/Region is required.";
     } else if (step === 3) {
@@ -81,33 +94,53 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
 
     try {
       setSubmitting(true);
-
+      const parts = formData.full_name.trim().split(" ");
+      const first_name = parts[0];
+      const last_name = parts.length > 1 ? parts.slice(1).join(" ") : "";
+      // -------------------------------------------------------------
+      // STEP 1 — Create or update personal details
+      // -------------------------------------------------------------
       if (step === 1) {
-        // Create initial record
-        const res = await fetch(`${API_URL}/auth/register/step1/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            role: selectedRole?.replace(/_/g, " "),
-            full_name: formData.full_name,
-            email: formData.email,
-            phone: formData.phone,
-            password: formData.password,
-          }),
-        });
+        const payload = {
+          role: selectedRole?.replace(/_/g, " "),
+          first_name,
+          last_name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          confirm_password: formData.confirmPassword,
+        };
+
+        let res, data;
+
+        if (userId) {
+          // Update existing user instead of recreating
+          res = await fetch(`${API_URL}/auth/register/step1/${userId}/`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          // Create new user
+          res = await fetch(`${API_URL}/auth/register/step1/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        }
 
         if (!res.ok) throw new Error("Failed to save Step 1");
-        const data = await res.json();
-        console.log("Step 1 Response:", data);
+        data = await res.json();
 
-
-        // ✅ Save ID and move to step 2 *after* success
-        setUserId(data.user_id);
+        if (!userId && data.user_id) setUserId(data.user_id);
         setStep(2);
         setErrors({});
-        return; // Stop further execution
+        return;
       }
 
+      // -------------------------------------------------------------
+      // STEP 2 — Location Details
+      // -------------------------------------------------------------
       if (step === 2) {
         if (!userId) throw new Error("User ID missing from Step 1!");
 
@@ -126,6 +159,9 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         return;
       }
 
+      // -------------------------------------------------------------
+      // STEP 3 — Farming Details
+      // -------------------------------------------------------------
       if (step === 3) {
         if (!userId) throw new Error("User ID missing from Step 1!");
 
@@ -133,9 +169,9 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            place_of_farming: formData.place_of_farming.toLowerCase(),
-            fish_species: formData.fish_species.map((s) => s.toLowerCase()),
-            age_group: formData.age_group.toLowerCase(),
+            place_of_farming: formData.place_of_farming?.toLowerCase(),
+            fish_species: formData.fish_species?.map((s) => s.toLowerCase()),
+            age_group: formData.age_group?.toLowerCase(),
           }),
         });
 
@@ -145,6 +181,22 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         return;
       }
 
+      // -------------------------------------------------------------
+      // STEP 4 — Confirmation
+      // -------------------------------------------------------------
+      if (step === 4) {
+        const res = await fetch(`${API_URL}/auth/register/step4/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        if (!res.ok) throw new Error("Failed to complete registration");
+        const data = await res.json();
+
+        alert(`🎉 Registration complete! Your username is ${data.username}`);
+        onClose && onClose();
+        return;
+      }
     } catch (err) {
       console.error("Next Step Error:", err);
       alert(err.message);
@@ -153,13 +205,36 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
     }
   };
 
-  const back = () => {
+  const back = async () => {
     setErrors({});
+    // If returning from Step 2 to Step 1
+    if (step === 2 && userId) {
+      try {
+        const res = await fetch(`${API_URL}/auth/register/step1/${userId}/`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+
+          // Update the form fields with data from backend
+          setFormData((prev) => ({
+            ...prev,
+            full_name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.first_name || data.last_name || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            username: data.username || "",
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      }
+    }
     setStep((s) => Math.max(1, s - 1));
   };
   const handleSubmit = async () => {
     if (!userId) return alert("User ID not found — please complete previous steps.");
-
     setSubmitting(true);
     try {
       const res = await fetch(`${API_URL}/auth/register/step4/${userId}/`, {
@@ -177,7 +252,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       }
 
       const data = await res.json();
-      alert(`🎉 Registration successful! Your username: ${data.username}`);
+      alert(`Registration successful! Your username: ${data.username}`);
       onClose && onClose();
     } catch (err) {
       alert(err.message);

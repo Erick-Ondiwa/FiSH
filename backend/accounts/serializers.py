@@ -2,12 +2,17 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import FarmerProfile
 
+from django.contrib.auth import authenticate
+
 User = get_user_model()
-
-
 # -------------------------------------------------------
 #  USER SERIALIZER (Step 1: Basic Personal Details)
 # -------------------------------------------------------
+
+from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from .models import User
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
@@ -15,14 +20,45 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     Used for Step 1 of multi-step registration.
     """
     password = serializers.CharField(write_only=True, required=False)
+    confirm_password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'password', 'username', 'role', 'is_verified']
+        fields = [
+            'id', 
+            'first_name', 
+            'last_name', 
+            'email', 
+            'phone', 
+            'password', 
+            'confirm_password',
+            'username', 
+            'role', 
+            'is_verified'
+        ]
         read_only_fields = ['username', 'is_verified']
+
+    def validate(self, data):
+        """
+        Ensure password confirmation and apply Django's password validation rules.
+        """
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+
+        # If either field is missing, don't block partial updates
+        if password or confirm_password:
+            if password != confirm_password:
+                raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+            try:
+                validate_password(password)
+            except DjangoValidationError as e:
+                raise serializers.ValidationError({"password": list(e.messages)})
+
+        return data
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
+        validated_data.pop('confirm_password', None)
         user = User(**validated_data)
         if password:
             user.set_password(password)
@@ -34,8 +70,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         Allow updating user info (useful for Save & Continue)
         """
         password = validated_data.pop('password', None)
+        validated_data.pop('confirm_password', None)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        
         if password:
             instance.set_password(password)
         instance.save()
@@ -95,3 +134,25 @@ class CompleteFarmerRegistrationSerializer(serializers.Serializer):
         )
 
         return {'user': user, 'farmer_profile': user.farmer_profile}
+
+class UserLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get("email")
+        password = data.get("password")
+
+        if not email or not password:
+            raise serializers.ValidationError("Both email and password are required.")
+
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise serializers.ValidationError("Invalid email or password.")
+
+        if not user.is_active:
+            raise serializers.ValidationError("This account is inactive.")
+
+        data["user"] = user
+        return data
+

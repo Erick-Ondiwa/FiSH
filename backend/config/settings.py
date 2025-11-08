@@ -34,7 +34,8 @@ INSTALLED_APPS = [
     # Installed Apps
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',  # optional for blacklist
+    'rest_framework_simplejwt.token_blacklist',
+    'rest_framework.authtoken',
     'corsheaders',
     # Created Apps
     "accounts.apps.AccountsConfig",
@@ -46,7 +47,7 @@ REST_FRAMEWORK = {
     #     # "rest_framework.renderers.BrowsableAPIRenderer",
     # ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+         'rest_framework.authentication.SessionAuthentication',
     ],
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
