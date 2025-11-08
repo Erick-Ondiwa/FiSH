@@ -4,6 +4,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 
+from rest_framework.authtoken.models import Token
+from .serializers import UserLoginSerializer
+
 from .models import FarmerProfile
 from .serializers import (
     UserRegistrationSerializer,
@@ -12,13 +15,23 @@ from .serializers import (
 )
 
 User = get_user_model()
-
-
 # -------------------------------------------------------------
 # ✅ STEP 1 — BASIC PERSONAL DETAILS
 # -------------------------------------------------------------
 class RegisterStepOneAPIView(APIView):
     permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        """
+        Retrieve existing user details (used when going back to step 1)
+        """
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserRegistrationSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         """
@@ -30,7 +43,7 @@ class RegisterStepOneAPIView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
-            # ✅ Automatically create related FarmerProfile
+            # Automatically create related FarmerProfile
             FarmerProfile.objects.create(user=user)
 
             return Response({
@@ -61,7 +74,6 @@ class RegisterStepOneAPIView(APIView):
 # -------------------------------------------------------------
 class RegisterStepTwoAPIView(APIView):
     permission_classes = [AllowAny]
-
     def patch(self, request, pk):
         """
         Step 2: Update the location details of the existing FarmerProfile.
@@ -71,7 +83,6 @@ class RegisterStepTwoAPIView(APIView):
             profile = FarmerProfile.objects.get(user_id=pk)
         except FarmerProfile.DoesNotExist:
             return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
-
         serializer = FarmerProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -136,3 +147,30 @@ class RegisterStepFourAPIView(APIView):
             "username": user.username,
             "profile_id": profile.id,
         }, status=status.HTTP_200_OK)
+
+class LoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data["user"]
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({
+                "message": "Login successful",
+                "token": token.key,
+                "user": {
+                    "id": user.id,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "email": user.email,
+                    "role": user.role,
+                }
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutAPIView(APIView):
+    def post(self, request):
+        logout(request)
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+

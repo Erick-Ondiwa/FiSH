@@ -17,4 +17,6 @@ urlpatterns = [
 
     # Step 4: Confirmation & review
     path('register/step4/<int:pk>/', views.RegisterStepFourAPIView.as_view(), name='register-step4'),
+
+    path('login/', views.LoginAPIView.as_view(), name='user-login'),
 ]
