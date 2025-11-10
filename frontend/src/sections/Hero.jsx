@@ -12,11 +12,11 @@ const Hero = () => {
       .getElementById("join-cards")
       ?.scrollIntoView({ behavior: "smooth" });
   };
-
+// bg-gradient-to-br from-blue-900/40 via-blue-700/30 to-teal-600/20 backdrop-blur-md
   return (
     <section
       id="home"
-      className="relative w-full min-h-screen flex flex-col justify-between bg-gradient-to-br from-blue-50 via-white to-blue-100 overflow-hidden pt-16 md:pt-24"
+      className="relative w-full min-h-screen flex flex-col justify-between bg-gradient-to-br from-blue-900 via-blue-700 to-teal-600 overflow-hidden pt-16 md:pt-24"
     >
       {/* Background Image */}
       <div
@@ -48,15 +48,32 @@ const Hero = () => {
           </div>
 
           <svg
-            className="absolute bottom-[-25px] left-0 w-[550px] opacity-40 z-10 wave-motion"
+            className="absolute bottom-[-30px] left-0 w-full max-w-[900px] opacity-70 z-10 animate-[waveMove_10s_ease-in-out_infinite]"
             viewBox="0 0 1440 320"
           >
+            <defs>
+              <linearGradient id="fishWaveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#38bdf8" />   {/* Light lake blue */}
+                <stop offset="50%" stopColor="#06b6d4" />  {/* Aquamarine */}
+                <stop offset="100%" stopColor="#22d3ee" /> {/* Sky aqua */}
+              </linearGradient>
+
+              <style>{`
+                @keyframes waveMove {
+                  0% { transform: translateX(0); }
+                  50% { transform: translateX(-25px); }
+                  100% { transform: translateX(0); }
+                }
+              `}</style>
+            </defs>
+
             <path
-              fill="#3b82f6"
+              fill="url(#fishWaveGradient)"
               fillOpacity="1"
-              d="M0,288L48,272C96,256,192,224,288,202.7C384,181,480,171,576,186.7C672,203,768,245,864,256C960,267,1056,245,1152,234.7C1248,224,1344,224,1392,224L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-            ></path>
+              d="M0,256L48,245.3C96,235,192,213,288,197.3C384,181,480,171,576,181.3C672,192,768,224,864,240C960,256,1056,256,1152,234.7C1248,213,1344,171,1392,149.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            />
           </svg>
+
         </motion.div>
 
         {/* Right: Text */}
@@ -80,15 +97,15 @@ const Hero = () => {
 
           <div className="flex justify-end md:justify-start space-x-4 pt-2">
             <button
-              onClick={() => setIsLoginOpen(true)} // ✅ open modal here
-              className="px-6 py-3 rounded-full bg-blue-700 text-white hover:bg-blue-800 transition shadow-md cursor-pointer"
+              onClick={() => setIsLoginOpen(true)}
+              className="px-3 py-2.5 rounded-full w-40 text-blue-700 font-medium bg-gradient-to-br from-blue-400/60 via-teal-300/40 to-blue-500/60 shadow-lg hover:shadow-cyan-500/40 transition-all duration-500 cursor-pointer"
             >
               Login
             </button>
 
             <button
               onClick={scrollToCards}
-              className="px-6 py-3 rounded-full border border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white transition shadow-md cursor-pointer"
+              className="px-3 py-2.5 w-40 bg-gradient-to-r from-blue-600 to-teal-500 text-white text-sm rounded-full font-medium shadow-md hover:from-blue-700 hover:to-teal-600 transition-all duration-300 cursor-pointer"
             >
               Register
             </button>

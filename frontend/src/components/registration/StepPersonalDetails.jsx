@@ -13,7 +13,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
       <div className="grid gap-3">
         {/* Full Name */}
         <label className="flex items-center space-x-3">
-          <User className="text-blue-500" />
+          <User className="text-blue-900" />
           <input
             type="text"
             placeholder="Full Name"
@@ -26,7 +26,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
 
         {/* Email */}
         <label className="flex items-center space-x-3">
-          <Mail className="text-blue-500" />
+          <Mail className="text-blue-900" />
           <input
             type="email"
             placeholder="Email address"
@@ -39,7 +39,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
 
         {/* Phone */}
         <label className="flex items-center space-x-3">
-          <Phone className="text-blue-500" />
+          <Phone className="text-blue-900" />
           <input
             type="tel"
             placeholder="Phone number"
@@ -52,7 +52,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
 
         {/* Password */}
         <div className="relative flex items-center space-x-3">
-          <Lock className="text-blue-500" />
+          <Lock className="text-blue-900" />
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
@@ -62,7 +62,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
           />
           <button
             type="button"
-            className="absolute right-3 text-gray-400 hover:text-gray-700"
+            className="absolute right-3 text-blue-900 hover:text-blue-700"
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -72,7 +72,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
 
         {/* Confirm Password */}
         <div className="relative flex items-center space-x-3">
-          <Lock className="text-blue-500" />
+          <Lock className="text-blue-900" />
           <input
             type={showConfirmPassword ? "text" : "password"}
             placeholder="Confirm Password"
@@ -82,7 +82,7 @@ const StepPersonalDetails = ({ formData, setFormData, errors }) => {
           />
           <button
             type="button"
-            className="absolute right-3 text-gray-400 hover:text-gray-700"
+            className="absolute right-3 text-blue-900 hover:text-blue-700"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
           >
             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}

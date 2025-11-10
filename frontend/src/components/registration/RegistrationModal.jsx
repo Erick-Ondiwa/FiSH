@@ -193,7 +193,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         if (!res.ok) throw new Error("Failed to complete registration");
         const data = await res.json();
 
-        alert(`🎉 Registration complete! Your username is ${data.username}`);
+        alert(`Registration complete! Your username is ${data.username}`);
         onClose && onClose();
         return;
       }
@@ -260,8 +260,6 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       setSubmitting(false);
     }
   };
-
-  
   return (
     <AnimatePresence>
       {open && (
@@ -274,7 +272,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-blue-700/30 to-teal-600/20 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -286,7 +284,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 20, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="relative z-50 w-full max-w-3xl mx-4 mt-15 bg-white/60 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
+            className="relative z-50 w-full max-w-3xl mx-4 mt-15 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden"
             role="dialog"
             aria-modal="true"
           >
@@ -295,9 +293,9 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
               <div>
                 <h2 className="text-xl font-bold text-blue-900">Create your FiSH account</h2>
               </div>
-              <h2 className="text-2xl font-bold mb-4 text-blue-700">
+              {/* <h2 className="text-2xl font-bold mb-4 text-blue-700">
                 Register as {selectedRole?.replace(/_/g, " ") || "Aspiring Farmer"}
-              </h2>
+              </h2> */}
 
               <div className="flex items-center space-x-3">
                 <div className="w-40 md:w-64">
@@ -354,7 +352,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
                 {step < TOTAL_STEPS ? (
                   <button
                     onClick={next}
-                    className="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 cursor-pointer text-white font-medium shadow"
+                    className="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow cursor-pointer hover:from-blue-700 hover:to-teal-500 transition-all duration-300"
                   >
                     Next
                   </button>

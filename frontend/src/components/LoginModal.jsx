@@ -60,16 +60,15 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onRegister }) => {
             exit={{ opacity: 0, scale: 0.9, y: 30 }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
           >
-            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl w-[90%] max-w-md p-8 overflow-hidden">
+            <div className="relative z-50 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl w-[90%] max-w-md p-8 overflow-hidden">
               
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-white hover:text-red-400 transition cursor-pointer"
+                className="absolute top-4 right-4 text-white hover:text-red-400 transition z-50 cursor-pointer"
               >
                 <X size={24} />
               </button>
-
               {/* Floating gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-200/30 via-teal-100/10 to-blue-300/20 blur-2xl"></div>
 
