@@ -30,8 +30,9 @@ const features = [
 const Features = () => {
   return (
     <section
+    //  bg-gradient-to-br from-blue-900/40 via-blue-700/30 to-teal-600/20 backdrop-blur-md
       id="features"
-      className="relative py-24 bg-gradient-to-b from-blue-50/80 via-white/90 to-blue-100/40 overflow-hidden"
+      className="relative py-24 bg-gradient-to-br from-blue-900/40 via-blue-700/30 to-teal-600/20 overflow-hidden"
     >
       {/* Animated Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -70,31 +71,40 @@ const Features = () => {
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.6 }}
-              className="relative bg-white/70 backdrop-blur-lg border border-blue-200/30 
-                         rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:-translate-y-2 
-                         transition-all duration-500 text-left"
+              className="relative rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:-translate-y-2 
+                        transition-all duration-500 text-left
+                        bg-gradient-to-br from-[#E0F7FA]/90 via-[#B2EBF2]/80 to-[#80DEEA]/90 
+                        border border-cyan-200/30 backdrop-blur-lg"
             >
-              {/* Floating Light */}
-              <div className="absolute -top-6 -right-6 w-20 h-20 bg-blue-300/30 rounded-full blur-2xl"></div>
+              {/* Floating Light Effect */}
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-cyan-300/40 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-blue-300/30 rounded-full blur-2xl"></div>
 
               {/* Icon */}
-              <div className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 mb-5">
+              <div className="flex items-center justify-center w-14 h-14 rounded-full 
+                              bg-gradient-to-r from-cyan-100 to-blue-100 shadow-inner mb-5">
                 {feature.icon}
               </div>
 
               {/* Text */}
-              <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              <h3 className="text-lg font-semibold text-cyan-900 mb-2">
                 {feature.title}
               </h3>
               <p className="text-gray-700 text-sm leading-relaxed mb-3">
                 {feature.desc}
               </p>
-              <p className="text-blue-600 text-xs font-medium uppercase tracking-wide">
+              <p className="text-cyan-700 text-xs font-medium uppercase tracking-wide">
                 {feature.user}
               </p>
+
+              {/* Subtle Glow on Hover */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br 
+                              from-cyan-100/10 via-transparent to-blue-100/10 opacity-0 
+                              group-hover:opacity-100 transition duration-700"></div>
             </motion.div>
           ))}
         </div>
+
       </div>
     </section>
   );

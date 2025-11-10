@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sprout, Fish, ShoppingBag, X } from "lucide-react";
+import { Sprout, Fish, ShoppingBag } from "lucide-react";
 import RegistrationModal from "./registration/RegistrationModal";
 
 const JoinCards = () => {
@@ -34,7 +34,7 @@ const JoinCards = () => {
   return (
     <section
       id="join-cards"
-      className="relative py-20 bg-gradient-to-b from-blue-20 via-blue-50 to-blue-100 overflow-hidden"
+      className="relative py-20 bg-gradient-to-br from-blue-900/40 via-blue-700/30 to-teal-600/20 overflow-hidden"
     >
       <div className="max-w-6xl mx-auto px-6 md:px-12 text-center">
         <motion.h2
@@ -63,28 +63,45 @@ const JoinCards = () => {
           className="flex flex-wrap justify-center gap-8"
         >
           {cards.map((card, i) => (
-            <div
+            <motion.div
               key={i}
-              className="bg-gradient-to-br from-blue-50 via-white to-blue-100 shadow-xl rounded-2xl p-8 w-80 border border-blue-100 hover:-translate-y-2 hover:shadow-2xl transition transform duration-300 cursor-pointer"
+              whileHover={{ scale: 1.03 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="relative group p-[1px] rounded-3xl w-80 bg-gradient-to-br from-blue-400/60 via-teal-300/40 to-blue-500/60 shadow-lg hover:shadow-cyan-500/40 transition-all duration-500"
             >
-              <div className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 mx-auto mb-4">
-                {card.icon}
+              {/* Inner glass layer */}
+              <div className="rounded-3xl p-8 bg-white/10 backdrop-blur-xl border border-white/20 h-full flex flex-col items-center justify-between transition-all duration-500 group-hover:bg-white/20">
+                {/* Icon */}
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400/40 to-blue-500/40 border border-white/30 shadow-md mb-4">
+                  {card.icon}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-xl font-semibold text-white text-center mb-2 drop-shadow-sm">
+                  {card.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-blue-900 text-sm text-center font-roboto leading-relaxed mb-6">
+                  {card.desc}
+                </p>
+
+                {/* Button */}
+                <button
+                  onClick={() => {
+                    setSelectedRole(card.role);
+                    setShowModal(true);
+                    console.log("Selected role:", card.role);
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-teal-500 text-white text-sm rounded-full font-medium shadow-md hover:from-blue-700 hover:to-teal-600 transition-all duration-300 cursor-pointer"
+                >
+                  {card.btn}
+                </button>
               </div>
-              <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                {card.title}
-              </h3>
-              <p className="text-gray-600 text-sm mb-6">{card.desc}</p>
-              <button
-                onClick={() => {
-                  setSelectedRole(card.role);
-                  setShowModal(true);
-                  console.log(card.role)
-                }}
-                className="px-5 py-2 bg-blue-700 text-white text-sm rounded-full font-medium hover:bg-blue-800 transition cursor-pointer"
-              >
-                {card.btn}
-              </button>
-            </div>
+
+              {/* Glow effect — now non-blocking */}
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 blur-3xl bg-gradient-to-br from-blue-400/30 via-cyan-300/20 to-teal-500/30 transition-all duration-500 pointer-events-none"></div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
@@ -94,12 +111,11 @@ const JoinCards = () => {
         {showModal && (
           <RegistrationModal
             selectedRole={selectedRole}
-            open={showModal}   
+            open={showModal}
             onClose={() => setShowModal(false)}
           />
         )}
       </AnimatePresence>
-
     </section>
   );
 };
