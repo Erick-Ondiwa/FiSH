@@ -115,14 +115,14 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
 
         if (userId) {
           // Update existing user instead of recreating
-          res = await fetch(`${API_URL}/auth/register/step1/${userId}/`, {
+          res = await fetch(`${API_URL}/accounts/register/step1/${userId}/`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
         } else {
           // Create new user
-          res = await fetch(`${API_URL}/auth/register/step1/`, {
+          res = await fetch(`${API_URL}/accounts/register/step1/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -143,7 +143,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       if (step === 2) {
         if (!userId) throw new Error("User ID missing from Step 1!");
 
-        const res = await fetch(`${API_URL}/auth/register/step2/${userId}/`, {
+        const res = await fetch(`${API_URL}/accounts/register/step2/${userId}/`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -164,7 +164,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       if (step === 3) {
         if (!userId) throw new Error("User ID missing from Step 1!");
 
-        const res = await fetch(`${API_URL}/auth/register/step3/${userId}/`, {
+        const res = await fetch(`${API_URL}/accounts/register/step3/${userId}/`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -184,7 +184,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       // STEP 4 — Confirmation
       // -------------------------------------------------------------
       if (step === 4) {
-        const res = await fetch(`${API_URL}/auth/register/step4/`, {
+        const res = await fetch(`${API_URL}/accounts/register/step4/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: userId }),
@@ -209,7 +209,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
     // If returning from Step 2 to Step 1
     if (step === 2 && userId) {
       try {
-        const res = await fetch(`${API_URL}/auth/register/step1/${userId}/`, {
+        const res = await fetch(`${API_URL}/accounts/register/step1/${userId}/`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -236,7 +236,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
     if (!userId) return alert("User ID not found — please complete previous steps.");
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/auth/register/step4/${userId}/`, {
+      const res = await fetch(`${API_URL}/accounts/register/step4/${userId}/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

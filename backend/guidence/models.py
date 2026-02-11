@@ -8,13 +8,27 @@ class OnboardingTask(models.Model):
     Example: Setup Pond, Source Fingerlings, Choose Fish Species.
     """
 
+    AGE_GROUP_CHOICES = [
+        ('fingerlings', 'Fingerlings'),
+        ('juvenile', 'Juvenile'),
+        ('matured fish', 'Matured Fish'),
+    ]
+
     title = models.CharField(max_length=150)
     short_description = models.TextField()
     icon = models.CharField(max_length=150, blank=True, null=True)
+
     farming_method = models.CharField(max_length=50, blank=True, null=True)
     fish_species = models.CharField(max_length=50, blank=True, null=True)
-    order = models.PositiveIntegerField(default=1)
 
+    fish_age_group = models.CharField(
+        max_length=20,
+        choices=AGE_GROUP_CHOICES,
+        blank=True,
+        null=True
+    )
+
+    order = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

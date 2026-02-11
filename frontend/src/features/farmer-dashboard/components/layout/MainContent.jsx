@@ -18,6 +18,7 @@ const MainContent = () => {
         });
 
         setTasks(res.data);
+        console.log("Tasks from API:", res.data);
       } catch (err) {
         console.log("Failed to load tasks:", err);
       }

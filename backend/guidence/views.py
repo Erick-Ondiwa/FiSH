@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from .models import OnboardingTask, TaskStep, FarmerStepProgress
 from accounts.models import FarmerProfile
@@ -37,7 +38,9 @@ class OnboardingTaskListView(generics.ListAPIView):
 
         if farmer and farmer.place_of_farming:
             queryset = queryset.filter(
-                farming_method__in=[farmer.place_of_farming, None, ""]
+                Q(farming_method__iexact=farmer.place_of_farming) |
+                Q(farming_method__isnull=True) |
+                Q(farming_method="")
             )
 
         return queryset
