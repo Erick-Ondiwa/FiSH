@@ -11,7 +11,7 @@ const StepLocationDetails = ({ formData, setFormData, errors }) => {
 
       <div className="grid gap-3">
         <label className="flex items-center space-x-3">
-          <MapPin className="text-blue-500" />
+          {/* <MapPin className="text-blue-500" /> */}
           <input
             type="text"
             placeholder="County / Region"

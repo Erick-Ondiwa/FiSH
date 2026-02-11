@@ -137,7 +137,6 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         setErrors({});
         return;
       }
-
       // -------------------------------------------------------------
       // STEP 2 — Location Details
       // -------------------------------------------------------------

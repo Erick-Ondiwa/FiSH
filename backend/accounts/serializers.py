@@ -12,7 +12,6 @@ User = get_user_model()
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import User
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
@@ -105,7 +104,6 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
-
 # -------------------------------------------------------
 # COMBINED SERIALIZER (Step 4: Confirmation & Review)
 # -------------------------------------------------------
@@ -135,6 +133,7 @@ class CompleteFarmerRegistrationSerializer(serializers.Serializer):
 
         return {'user': user, 'farmer_profile': user.farmer_profile}
 
+
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -147,6 +146,7 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Both email and password are required.")
 
         user = authenticate(email=email, password=password)
+
         if not user:
             raise serializers.ValidationError("Invalid email or password.")
 
@@ -155,4 +155,5 @@ class UserLoginSerializer(serializers.Serializer):
 
         data["user"] = user
         return data
+
 

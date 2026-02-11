@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Fish, X } from "lucide-react"; // X for close
-
+import axios from "axios";
 import { API_URL } from "../../api";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { Fish, X } from "lucide-react";
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess, onRegister }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,24 +20,38 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onRegister }) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/auth/login/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
+      const res = await axios.post(`${API_URL}/accounts/token/`, {
+        email: formData.email, // or email if customized
+        password: formData.password,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error || "Login failed");
+      const { access, refresh } = res.data;
 
-      onLoginSuccess(data.user);
+      // ✅ Store tokens
+      localStorage.setItem("access_token", access);
+      localStorage.setItem("refresh_token", refresh);
+
+      // ✅ Optionally fetch user profile
+      // const profileRes = await axios.get(`${API_URL}/accounts/me/`, {
+      //   headers: {
+      //     Authorization: `Bearer ${access}`,
+      //   },
+      // });
+
+     onLoginSuccess(res.data.user);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        "Login failed"
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
@@ -131,7 +145,6 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onRegister }) => {
                       </button>
                     </div>
                   </div>
-
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, y: -5 }}

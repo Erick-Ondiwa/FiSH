@@ -1,7 +1,7 @@
 import React from "react";
 import { MapPin, Fish } from "lucide-react";
 const speciesOptions = ["Tilapia", "Catfish", "Trout", "Nile Perch", "Other"];
-const placeOptions = ["Pond", "Pake", "Cage", "Other"];
+const placeOptions = ["Pond", "Lake", "Cage", "Other"];
 const ageOptions = ["Fingerlings", "Juvenile", "Matured Fish"];
 
 const StepFarmingDetails = ({ formData, setFormData, errors }) => {
