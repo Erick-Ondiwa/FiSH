@@ -83,27 +83,70 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 # FARMER PROFILE SERIALIZER (Steps 2 & 3)
 # -------------------------------------------------------
 
+from core.models import (
+    County,
+    SubCounty,
+    FarmingMethod,
+    FishSpecies,
+    FishAgeGroup,
+)
+
 class FarmerProfileSerializer(serializers.ModelSerializer):
-    """
-    Handles the farmer's extended details (location + farming info).
-    Supports partial saves to enable 'Save and Continue'.
-    """
+
+    # Explicitly define relational fields
+    county = serializers.PrimaryKeyRelatedField(
+        queryset=County.objects.all()
+    )
+
+    subcounty = serializers.PrimaryKeyRelatedField(
+        queryset=SubCounty.objects.all()
+    )
+
+    farming_method = serializers.PrimaryKeyRelatedField(
+        queryset=FarmingMethod.objects.all()
+    )
+
+    fish_species = serializers.PrimaryKeyRelatedField(
+        queryset=FishSpecies.objects.all(),
+        many=True
+    )
+
+    age_group = serializers.PrimaryKeyRelatedField(
+        queryset=FishAgeGroup.objects.all()
+    )
+
     class Meta:
         model = FarmerProfile
         fields = [
-            'id', 'user', 'county', 'subcounty',
-            'place_of_farming', 'fish_species', 'age_group', 'date_registered'
+            'id',
+            'user',
+            'county',
+            'subcounty',
+            'farming_method',
+            'fish_species',
+            'age_group',
+            'date_registered'
         ]
-        read_only_fields = ['date_registered']
+        read_only_fields = ['date_registered', 'user']
 
     def create(self, validated_data):
-        return FarmerProfile.objects.create(**validated_data)
+        fish_species = validated_data.pop('fish_species')
+        profile = FarmerProfile.objects.create(**validated_data)
+        profile.fish_species.set(fish_species)
+        return profile
 
     def update(self, instance, validated_data):
+        fish_species = validated_data.pop('fish_species', None)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
+        if fish_species is not None:
+            instance.fish_species.set(fish_species)
+
         instance.save()
         return instance
+
 # -------------------------------------------------------
 # COMBINED SERIALIZER (Step 4: Confirmation & Review)
 # -------------------------------------------------------

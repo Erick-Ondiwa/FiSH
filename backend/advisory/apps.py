@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class GuidenceConfig(AppConfig):
+class AdvisoryConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'guidence'
+    name = 'advisory'

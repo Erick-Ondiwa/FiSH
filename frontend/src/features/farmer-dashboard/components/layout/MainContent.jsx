@@ -61,7 +61,7 @@ const MainContent = () => {
             </p>
 
             <Link
-              to={`/onboarding/task/${task.id}`}
+              to={`/guidence/tasks/${task.id}`}
               className="inline-block bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800"
             >
               View Steps

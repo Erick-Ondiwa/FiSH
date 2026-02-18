@@ -1,86 +1,149 @@
-import React from "react";
-import { MapPin, Fish } from "lucide-react";
-const speciesOptions = ["Tilapia", "Catfish", "Trout", "Nile Perch", "Other"];
-const placeOptions = ["Pond", "Lake", "Cage", "Other"];
-const ageOptions = ["Fingerlings", "Juvenile", "Matured Fish"];
+import React, { useEffect, useState } from "react";
+
+import { API_URL } from "../../../api";
 
 const StepFarmingDetails = ({ formData, setFormData, errors }) => {
-  const toggleSpecies = (s) => {
-    const next = formData.fish_species.includes(s)
-      ? formData.fish_species.filter((x) => x !== s)
-      : [...formData.fish_species, s];
+  const [farmingMethods, setFarmingMethods] = useState([]);
+  const [speciesList, setSpeciesList] = useState([]);
+  const [ageGroups, setAgeGroups] = useState([]);
+
+  // Fetch all lookup data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [methodsRes, speciesRes, ageRes] = await Promise.all([
+          fetch(`${API_URL}/core/farming-methods/`),
+          fetch(`${API_URL}/core/fish-species/`),
+          fetch(`${API_URL}/core/age-groups/`),
+        ]);
+
+        setFarmingMethods(await methodsRes.json());
+        setSpeciesList(await speciesRes.json());
+        setAgeGroups(await ageRes.json());
+      } catch (err) {
+        console.error("Failed to load farming data:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Toggle species (many-to-many IDs)
+  const toggleSpecies = (id) => {
+    const current = formData.fish_species || [];
+
+    const next = current.includes(id)
+      ? current.filter((x) => x !== id)
+      : [...current, id];
+
     setFormData({ ...formData, fish_species: next });
   };
+
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-blue-900">Farming details</h3>
-      <p className="text-sm text-gray-600">
-        Tell us where and what you plan to farm so we can recommend tailored resources.
-      </p>
+      <h3 className="text-lg font-semibold text-blue-900">
+        Farming Details
+      </h3>
 
       <div className="grid gap-4">
+
+        {/* Farming Method */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Place of farming</label>
+          <label className="block text-sm font-medium mb-2">
+            Place of farming
+          </label>
           <div className="flex flex-wrap gap-3">
-            {placeOptions.map((p) => (
+            {farmingMethods.map((method) => (
               <button
-                key={p}
+                key={method.id}
                 type="button"
-                onClick={() => setFormData({ ...formData, place_of_farming: p })}
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    place_of_farming: method.id,
+                  })
+                }
                 className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.place_of_farming === p
+                  formData.place_of_farming === method.id
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white/40 text-blue-800 border-white/30"
+                    : "bg-white text-blue-800 border-gray-300"
                 }`}
               >
-                {p}
+                {method.name}
               </button>
             ))}
           </div>
-          {errors.place_of_farming && <p className="text-xs text-red-400">{errors.place_of_farming}</p>}
+          {errors.place_of_farming && (
+            <p className="text-xs text-red-500 mt-1">
+              {errors.place_of_farming}
+            </p>
+          )}
         </div>
 
+        {/* Fish Species (Multi-select) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Fish species</label>
+          <label className="block text-sm font-medium mb-2">
+            Fish Species
+          </label>
           <div className="flex flex-wrap gap-3">
-            {speciesOptions.map((s) => (
+            {speciesList.map((species) => (
               <button
-                key={s}
+                key={species.id}
                 type="button"
-                onClick={() => toggleSpecies(s)}
+                onClick={() => toggleSpecies(species.id)}
                 className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.fish_species.includes(s)
+                  formData.fish_species?.includes(species.id)
                     ? "bg-cyan-600 text-white border-cyan-600"
-                    : "bg-white/40 text-blue-800 border-white/30"
+                    : "bg-white text-blue-800 border-gray-300"
                 }`}
               >
-                {s}
+                {species.name}
               </button>
             ))}
           </div>
-          <small className="text-xs text-gray-500">Choose one or more species.</small>
-          {errors.fish_species && <p className="text-xs text-red-400">{errors.fish_species}</p>}
+          <small className="text-xs text-gray-500">
+            Choose one or more species.
+          </small>
+          {errors.fish_species && (
+            <p className="text-xs text-red-500 mt-1">
+              {errors.fish_species}
+            </p>
+          )}
         </div>
+
+        {/* Age Group */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Age group</label>
+          <label className="block text-sm font-medium mb-2">
+            Age Group
+          </label>
           <div className="flex flex-wrap gap-3">
-            {ageOptions.map((a) => (
+            {ageGroups.map((age) => (
               <button
-                key={a}
+                key={age.id}
                 type="button"
-                onClick={() => setFormData({ ...formData, age_group: a })}
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    age_group: age.id,
+                  })
+                }
                 className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.age_group === a
+                  formData.age_group === age.id
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white/40 text-blue-800 border-white/30"
+                    : "bg-white text-blue-800 border-gray-300"
                 }`}
               >
-                {a}
+                {age.name}
               </button>
             ))}
           </div>
-          {errors.age_group && <p className="text-xs text-red-400">{errors.age_group}</p>}
+          {errors.age_group && (
+            <p className="text-xs text-red-500 mt-1">
+              {errors.age_group}
+            </p>
+          )}
         </div>
+
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ from .serializers import (
     CompleteFarmerRegistrationSerializer
 )
 
+
 User = get_user_model()
 # -------------------------------------------------------------
 # ✅ STEP 1 — BASIC PERSONAL DETAILS

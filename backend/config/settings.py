@@ -23,10 +23,12 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'rest_framework.authtoken',
+    "django_filters",
     'corsheaders',
     # Created Apps
+    "core.apps.CoreConfig",
     "accounts.apps.AccountsConfig",
-    "guidence.apps.GuidenceConfig",
+    "advisory.apps.AdvisoryConfig",
 ]
 
 REST_FRAMEWORK = {
@@ -35,7 +37,10 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
-    )
+    ),
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ],
 }
 
 # ensure secure cookies in prod
