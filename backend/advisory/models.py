@@ -1,5 +1,7 @@
 from django.db import models
-from django.utils import timezone
+from django.conf import settings
+from django.utils.text import slugify
+
 from core.models import (
     County,
     SubCounty,
@@ -8,122 +10,191 @@ from core.models import (
     FarmingMethod,
 )
 
-class AdvisoryContent(models.Model):
+# ============================================================
+# Advisory Section (Sidebar Navigation)
+# ============================================================
+
+class AdvisorySection(models.Model):
     """
-    Contextual advisory information based on:
-    - Farming method
-    - Species
-    - Age group
-    - Region (optional filtering)
+    Represents sidebar navigation sections like:
+    - Getting Started
+    - Farming Place Setup
+    - Sourcing Fish
     """
 
-    # Context Filters (Optional Region Specificity)
-    county = models.ForeignKey(
-        County,
-        on_delete=models.SET_NULL,
-        null=True,
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+
+    icon = models.CharField(
+        max_length=100,
         blank=True,
-        related_name="advisories"
+        help_text="Optional icon name for frontend UI"
     )
 
-    subcounty = models.ForeignKey(
-        SubCounty,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="advisories"
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+# ============================================================
+#  Advisory Guide (Context-Based Filtering)
+# ============================================================
+
+class AdvisoryGuide(models.Model):
+    """
+    Context-specific advisory guide.
+    One section can have multiple guides depending on:
+    - Farming Method
+    - Fish Species
+    - Age Group
+    - Optional Region
+    """
+
+    section = models.ForeignKey(
+        AdvisorySection,
+        on_delete=models.CASCADE,
+        related_name="guides"
     )
 
     farming_method = models.ForeignKey(
         FarmingMethod,
         on_delete=models.CASCADE,
-        related_name="advisories"
+        related_name="advisory_guides"
     )
 
     fish_species = models.ForeignKey(
         FishSpecies,
-        on_delete=models.CASCADE,
-        related_name="advisories"
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='advisory_guides'
     )
 
     age_group = models.ForeignKey(
         FishAgeGroup,
         on_delete=models.CASCADE,
-        related_name="advisories"
+        related_name="advisory_guides"
     )
 
-    # Advisory Sections
-    setup_procedure = models.TextField()
-    feeding_guidelines = models.TextField()
-    disease_prevention = models.TextField()
-    water_management = models.TextField()
-    harvesting_tips = models.TextField()
-    sustainability_practices = models.TextField()
+    county = models.ForeignKey(
+        County,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="advisory_guides"
+    )
 
-    # Metadata
+    subcounty = models.ForeignKey(
+        SubCounty,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="advisory_guides"
+    )
+
+    introduction = models.TextField(
+        blank=True,
+        help_text="Optional introduction shown at top of guide"
+    )
+
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
+
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Advisory Content"
-        verbose_name_plural = "Advisory Contents"
         indexes = [
             models.Index(fields=["farming_method", "fish_species", "age_group"]),
         ]
 
     def __str__(self):
-        return f"{self.fish_species.name} - {self.farming_method.name} ({self.age_group.name})"
+        return f"{self.section.name} - {self.fish_species.name}"
 
-class FishDisease(models.Model):
+
+# ============================================================
+# Advisory Step (Ordered Steps + Images)
+# ============================================================
+
+class AdvisoryStep(models.Model):
     """
-    Species-specific disease information.
+    Individual step inside a guide.
+    Example:
+    Step 1 – Prepare Pond
+    Step 2 – Test Water
+    Step 3 – Install Aeration
     """
 
-    name = models.CharField(max_length=255)
-
-    fish_species = models.ForeignKey(
-        FishSpecies,
+    guide = models.ForeignKey(
+        AdvisoryGuide,
         on_delete=models.CASCADE,
-        related_name="diseases"
+        related_name="steps"
     )
 
-    symptoms = models.TextField()
-    causes = models.TextField()
-    prevention = models.TextField()
-    treatment = models.TextField()
+    step_number = models.PositiveIntegerField()
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+
+    image = models.ImageField(
+        upload_to="advisory/steps/",
+        blank=True,
+        null=True
+    )
+
+    video_url = models.URLField(blank=True, null=True)
+
+    is_mandatory = models.BooleanField(
+        default=True,
+        help_text="Whether this step is required for onboarding completion"
+    )
+
+    class Meta:
+        ordering = ["step_number"]
+        unique_together = ("guide", "step_number")
 
     def __str__(self):
-        return f"{self.name} ({self.fish_species.name})"
+        return f"{self.guide.section.name} - Step {self.step_number}"
 
-class FishSourcing(models.Model):
+# ============================================================
+#  User Onboarding Progress (Getting Started Engine)
+# ============================================================
+
+class UserOnboardingProgress(models.Model):
     """
-    Sourcing guidance for fingerlings/juveniles by region and species.
+    Tracks onboarding progress for 'Getting Started'
     """
 
-    county = models.ForeignKey(
-        County,
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="sourcing_guides"
+        related_name="onboarding_progress"
     )
 
-    fish_species = models.ForeignKey(
-        FishSpecies,
-        on_delete=models.CASCADE,
-        related_name="sourcing_guides"
-    )
+    farm_setup_completed = models.BooleanField(default=False)
+    fish_sourcing_completed = models.BooleanField(default=False)
 
-    age_group = models.ForeignKey(
-        FishAgeGroup,
-        on_delete=models.CASCADE,
-        related_name="sourcing_guides"
-    )
+    completed_at = models.DateTimeField(null=True, blank=True)
 
-    sourcing_guidelines = models.TextField()
-    average_price_range = models.CharField(max_length=100, blank=True, null=True)
+    def overall_completion_percentage(self):
+        total = 2
+        completed = sum([
+            self.farm_setup_completed,
+            self.fish_sourcing_completed,
+        ])
+        return int((completed / total) * 100)
 
     def __str__(self):
-        return f"Sourcing {self.fish_species.name} in {self.county.name}"
+        return f"Onboarding - {self.user.username}"
+
 
 class Supplier(models.Model):
     """

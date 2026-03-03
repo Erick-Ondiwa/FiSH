@@ -1,48 +1,44 @@
 from django.urls import path
-from advisory.views import (
-    DashboardView,
-    SpeciesAdvisoryDetailView,
-    DiseaseListView,
-    SourcingListView,
-    SupplierListView,
+
+from .views import (
+    AdvisorySectionListView,
+    AdvisoryGuideDetailView,
+    UserOnboardingStatusView,
 )
 
 app_name = "advisory"
 
 urlpatterns = [
 
-    # 🔹 Personalized Dashboard
+    # -------------------------------------------------------
+    # Sidebar Sections
+    # GET /api/advisory/sections/
+    # -------------------------------------------------------
     path(
-        "dashboard/",
-        DashboardView.as_view(),
-        name="dashboard"
+        "sections/",
+        AdvisorySectionListView.as_view(),
+        name="advisory-sections",
     ),
 
-    # 🔹 Advisory by Species (detail)
+    # -------------------------------------------------------
+    # Context-Aware Guide
+    # GET /api/advisory/guide/<slug>/
+    # Example:
+    # /api/advisory/guide/farming-place-setup/
+    # -------------------------------------------------------
     path(
-        "species/<int:species_id>/",
-        SpeciesAdvisoryDetailView.as_view(),
-        name="species-advisory-detail"
+        "guide/<slug:slug>/",
+        AdvisoryGuideDetailView.as_view(),
+        name="advisory-guide-detail",
     ),
 
-    # 🔹 Diseases (filtered automatically by user profile)
+    # -------------------------------------------------------
+    # Getting Started (Onboarding)
+    # GET /api/advisory/onboarding/
+    # -------------------------------------------------------
     path(
-        "diseases/",
-        DiseaseListView.as_view(),
-        name="disease-list"
-    ),
-
-    # 🔹 Sourcing (supports ?species=ID)
-    path(
-        "sourcing/",
-        SourcingListView.as_view(),
-        name="sourcing-list"
-    ),
-
-    # 🔹 Verified Suppliers (supports ?species=ID)
-    path(
-        "suppliers/",
-        SupplierListView.as_view(),
-        name="supplier-list"
+        "onboarding/",
+        UserOnboardingStatusView.as_view(),
+        name="advisory-onboarding-status",
     ),
 ]

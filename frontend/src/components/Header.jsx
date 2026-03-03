@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import logo from "../assets/hero-bg.jpg"; // Replace with your FiSH logo
+import logo from "../assets/FiSH-logo.png";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,14 +19,14 @@ const Header = () => {
           <img
             src={logo}
             alt="FiSH Logo"
-            className="w-10 h-10 object-contain drop-shadow-md"
+            className="w-40  object-contain drop-shadow-md "
           />
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
+          {/* <h1 className="text-2xl font-extrabold text-white tracking-tight">
             FiSH
             <span className="block text-xs text-cyan-100 font-medium">
               Intelligent Support Hub
             </span>
-          </h1>
+          </h1> */}
         </div>
 
         {/* Desktop Navbar */}

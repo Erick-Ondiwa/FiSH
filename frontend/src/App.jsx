@@ -5,7 +5,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/fish" element={<LandingPage />} />
+        <Route path="" element={<LandingPage />} />
         <Route path="/fish/aspiring-farmer" element={<DashboardLayout />} />
       </Routes>
     </Router>

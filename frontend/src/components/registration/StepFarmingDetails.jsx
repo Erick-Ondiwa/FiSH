@@ -90,9 +90,14 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
               <button
                 key={species.id}
                 type="button"
-                onClick={() => toggleSpecies(species.id)}
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    fish_species: species.id,
+                  })
+                }
                 className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.fish_species?.includes(species.id)
+                  formData.fish_species === species.id
                     ? "bg-cyan-600 text-white border-cyan-600"
                     : "bg-white text-blue-800 border-gray-300"
                 }`}

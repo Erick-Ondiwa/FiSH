@@ -148,8 +148,10 @@ class FarmerProfile(models.Model):
         related_name='farmers'
     )
 
-    fish_species = models.ManyToManyField(
+    fish_species = models.ForeignKey(
         FishSpecies,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
         related_name='farmers'
     )

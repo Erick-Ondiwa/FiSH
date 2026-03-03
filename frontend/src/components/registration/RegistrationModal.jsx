@@ -140,7 +140,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         errors.place_of_farming = "Select where you will farm.";
       }
 
-      if (!Array.isArray(formData.fish_species) || formData.fish_species.length === 0) {
+      if (!formData.fish_species) {
         errors.fish_species = "Select at least one fish species.";
       }
 
@@ -248,9 +248,9 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
                 ? Number(formData.place_of_farming)
                 : null,
 
-              fish_species: formData.fish_species?.map((id) =>
-                Number(id)
-              ),
+              fish_species: formData.fish_species
+                ? Number(formData.fish_species)
+                : null,
 
               age_group: formData.age_group
                 ? Number(formData.age_group)
@@ -363,7 +363,7 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
             ...prev,
             place_of_farming: data.place_of_farming || "",
             age_group: data.age_group || "",
-            fish_species: data.fish_species || [],
+            fish_species: data.fish_species || "",
           }));
         }
       }

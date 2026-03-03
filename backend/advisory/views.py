@@ -1,107 +1,150 @@
+from django.shortcuts import get_object_or_404
+from django.db.models import Prefetch
+from django.contrib.auth import get_user_model
+
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from advisory.services.advisory_service import AdvisoryService
-   
-from advisory.serializers.dashboard_serializers import DashboardSerializer
+from rest_framework import status
 
-from advisory.models import FishDisease
-from advisory.models import Supplier
-from advisory.serializers.advisory_serializers import DiseaseSerializer, SupplierSerializer, FishSourcingSerializer
+from accounts.models import FarmerProfile
 
-from advisory.models import FishSourcing
+from .models import (
+    AdvisorySection,
+    AdvisoryGuide,
+    AdvisoryStep,
+    UserOnboardingProgress,
+)
 
-class SpeciesAdvisoryDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+from .serializers import (
+    AdvisorySectionSerializer,
+    AdvisoryGuideSerializer,
+    UserOnboardingProgressSerializer,
+)
 
-    def get(self, request, species_id):
-        user = request.user
+# user = get_user_model()
+class AdvisorySectionListView(APIView):
+    """
+    Returns sidebar sections:
+    - Getting Started
+    - Farming Place Setup
+    - Sourcing Fish
+    """
 
-        if not hasattr(user, "farmer_profile"):
-            return Response(
-                {"detail": "Farmer profile not found"},
-                status=400
-            )
-
-        profile = user.farmer_profile
-
-        bundle = AdvisoryService.get_species_bundle(
-            profile=profile,
-            species_id=species_id
-        )
-
-        return Response(bundle)
-
-
-class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        data = AdvisoryService.get_dashboard_context(request.user)
-        return Response(data)
+        sections = AdvisorySection.objects.filter(
+            is_active=True
+        ).order_by("order")
 
-class DiseaseListView(ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = DiseaseSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-
-        if not hasattr(user, "farmer_profile"):
-            return FishDisease.objects.none()
-
-        profile = user.farmer_profile
-
-        return FishDisease.objects.filter(
-            fish_species__in=profile.fish_species.all()
+        serializer = AdvisorySectionSerializer(
+            sections,
+            many=True
         )
 
+        return Response(serializer.data)
 
-class SourcingListView(ListAPIView):
+class AdvisoryGuideDetailView(APIView):
+    """
+    Returns context-aware guide based on:
+    - Section slug
+    - User profile configuration
+    """
+
     permission_classes = [IsAuthenticated]
-    serializer_class = FishSourcingSerializer
 
-    def get_queryset(self):
-        user = self.request.user
+    def get(self, request, slug):
 
-        if not hasattr(user, "farmer_profile"):
-            return FishSourcing.objects.none()
+        user = request.user
+        try:
+            profile = user.farmer_profile
+        except FarmerProfile.DoesNotExist:
+            return Response(
+                profile,
+                {"detail": "Farmer profile not found."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        section = get_object_or_404(
+            AdvisorySection,
+            slug=slug,
+            is_active=True
+        )
 
-        profile = user.farmer_profile
-        species_id = self.request.query_params.get("species")
+        guide = self._get_best_match_guide(section, profile)
 
-        queryset = FishSourcing.objects.filter(
+        if not guide:
+            return Response(
+                {"detail": "No advisory guide available for your configuration."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = AdvisoryGuideSerializer(
+            guide,
+            context={"request": request}
+        )
+
+        return Response(serializer.data)
+    def _get_best_match_guide(self, section, profile):
+
+        base_filter = {
+            "section": section,
+            "is_active": True,
+        }
+
+        if profile.farming_method:
+            base_filter["farming_method"] = profile.farming_method
+
+        if profile.fish_species:
+            base_filter["fish_species"] = profile.fish_species
+
+        if profile.age_group:
+            base_filter["age_group"] = profile.age_group
+
+        # Level 1: county + subcounty
+        guide = AdvisoryGuide.objects.select_related(
+            "section"
+        ).prefetch_related(
+            Prefetch("steps", queryset=AdvisoryStep.objects.order_by("step_number"))
+        ).filter(
             county=profile.county,
-            age_group=profile.age_group
-        )
+            subcounty=profile.subcounty,
+            **base_filter
+        ).distinct().first()
 
-        if species_id:
-            queryset = queryset.filter(fish_species_id=species_id)
+        if guide:
+            return guide
 
-        return queryset
-
-
-class SupplierListView(ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = SupplierSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-
-        if not hasattr(user, "farmer_profile"):
-            return Supplier.objects.none()
-
-        profile = user.farmer_profile
-        species_id = self.request.query_params.get("species")
-
-        queryset = Supplier.objects.filter(
+        # Level 2: county only
+        guide = AdvisoryGuide.objects.filter(
             county=profile.county,
-            is_verified=True
+            subcounty__isnull=True,
+            **base_filter
+        ).distinct().first()
+
+        if guide:
+            return guide
+
+        # Level 3: no region
+        return AdvisoryGuide.objects.filter(
+            county__isnull=True,
+            subcounty__isnull=True,
+            **base_filter
+        ).distinct().first()
+class UserOnboardingStatusView(APIView):
+    """
+    Default dashboard home.
+    Shows onboarding completion progress.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        progress, _ = UserOnboardingProgress.objects.get_or_create(
+            user=request.user
         )
 
-        if species_id:
-            queryset = queryset.filter(fish_species__id=species_id)
+        serializer = UserOnboardingProgressSerializer(progress)
 
-        return queryset.distinct()
-
+        return Response(serializer.data)

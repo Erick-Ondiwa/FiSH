@@ -108,7 +108,6 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 
     fish_species = serializers.PrimaryKeyRelatedField(
         queryset=FishSpecies.objects.all(),
-        many=True
     )
 
     age_group = serializers.PrimaryKeyRelatedField(
@@ -130,19 +129,19 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['date_registered', 'user']
 
     def create(self, validated_data):
-        fish_species = validated_data.pop('fish_species')
+        # fish_species = validated_data.pop('fish_species')
         profile = FarmerProfile.objects.create(**validated_data)
-        profile.fish_species.set(fish_species)
+        # profile.fish_species.set(fish_species)
         return profile
 
     def update(self, instance, validated_data):
-        fish_species = validated_data.pop('fish_species', None)
+        # fish_species = validated_data.pop('fish_species', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        if fish_species is not None:
-            instance.fish_species.set(fish_species)
+        # if fish_species is not None:
+        #     instance.fish_species.set(fish_species)
 
         instance.save()
         return instance

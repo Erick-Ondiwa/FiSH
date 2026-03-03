@@ -59,17 +59,17 @@ const StepReview = ({ formData }) => {
   const resolveName = (list, id) =>
     list.find((item) => item.id === id)?.name || "—";
 
-  const resolveSpeciesNames = () => {
-    if (!formData.fish_species?.length) return "—";
+  // const resolveSpeciesNames = () => {
+  //   if (!formData.fish_species?.length) return "—";
 
-    return formData.fish_species
-      .map(
-        (id) =>
-          lookups.species.find((s) => s.id === id)?.name
-      )
-      .filter(Boolean)
-      .join(", ");
-  };
+  //   return formData.fish_species
+  //     .map(
+  //       (id) =>
+  //         lookups.species.find((s) => s.id === id)?.name
+  //     )
+  //     .filter(Boolean)
+  //     .join(", ");
+  // };
 
   return (
     <div className="space-y-4">
@@ -107,7 +107,10 @@ const StepReview = ({ formData }) => {
 
         <ReviewRow
           label="Species"
-          value={resolveSpeciesNames()}
+          value={resolveName(
+            lookups.species,
+            formData.fish_species
+          )}
         />
 
         <ReviewRow
