@@ -2,9 +2,19 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from django.contrib.auth import get_user_model
-
 from rest_framework.authtoken.models import Token
+
+from rest_framework.permissions import IsAuthenticated
+
+from django.contrib.auth import authenticate, login, get_user_model
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
+
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .serializers import UserLoginSerializer
+
 from .serializers import UserLoginSerializer
 
 from .models import FarmerProfile
@@ -13,6 +23,7 @@ from .serializers import (
     FarmerProfileSerializer,
     CompleteFarmerRegistrationSerializer
 )
+
 
 User = get_user_model()
 # -------------------------------------------------------------
@@ -153,24 +164,74 @@ class LoginAPIView(APIView):
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data["user"]
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        response = Response(
+            {
                 "message": "Login successful",
-                "token": token.key,
                 "user": {
                     "id": user.id,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "email": user.email,
                     "role": user.role,
-                }
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        # ✅ Secure cookies
+        response.set_cookie(
+            key="access",
+            value=str(access),
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+        )
+
+        response.set_cookie(
+            key="refresh",
+            value=str(refresh),
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+        )
+
+        return response
 
 class LogoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        logout(request)
-        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+        refresh_token = request.COOKIES.get("refresh")
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+
+        response = Response(
+            {"message": "Logout successful"},
+            status=status.HTTP_200_OK,
+        )
+
+        response.delete_cookie("access")
+        response.delete_cookie("refresh")
+
+        return response
+
+
+def get_csrf_token(request):
+    """
+    Return CSRF token as JSON.
+    """
+    return JsonResponse({"csrfToken": get_token(request)})
+
 

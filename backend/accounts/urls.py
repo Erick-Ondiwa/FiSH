@@ -1,22 +1,32 @@
 from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .views import get_csrf_token
 from . import views
 
-app_name = 'accounts'
+app_name = "accounts"
 
 urlpatterns = [
     # Step 1: Basic personal details
-    path('register/step1/', views.RegisterStepOneAPIView.as_view(), name='register-step1'),
-    path('register/step1/<int:pk>/', views.RegisterStepOneAPIView.as_view(), name='update-step1'),
+    path("register/step1/", views.RegisterStepOneAPIView.as_view(), name="register-step1"),
+    path("register/step1/<int:pk>/", views.RegisterStepOneAPIView.as_view(), name="update-step1"),
 
     # Step 2: Location details
-    path('register/step2/', views.RegisterStepTwoAPIView.as_view(), name='register-step2'),
-    path('register/step2/<int:pk>/', views.RegisterStepTwoAPIView.as_view(), name='update-step2'),
+    path("register/step2/", views.RegisterStepTwoAPIView.as_view(), name="register-step2"),
+    path("register/step2/<int:pk>/", views.RegisterStepTwoAPIView.as_view(), name="update-step2"),
 
     # Step 3: Farming details
-    path('register/step3/<int:pk>/', views.RegisterStepThreeAPIView.as_view(), name='update-step3'),
+    path("register/step3/<int:pk>/", views.RegisterStepThreeAPIView.as_view(), name="update-step3"),
 
     # Step 4: Confirmation & review
-    path('register/step4/<int:pk>/', views.RegisterStepFourAPIView.as_view(), name='register-step4'),
+    path("register/step4/<int:pk>/", views.RegisterStepFourAPIView.as_view(), name="register-step4"),
 
-    path('login/', views.LoginAPIView.as_view(), name='user-login'),
+    # CSRF
+    path("csrf/", get_csrf_token, name="csrf"),
+
+    # Login (your custom login)
+    path("login/", views.LoginAPIView.as_view(), name="user-login"),
+
+    # JWT Tokens
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]

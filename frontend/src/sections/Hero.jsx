@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import heroImg from "../assets/hero-bg.jpg";
 import JoinCards from "../components/Cards";
-import LoginModal from "../components/LoginModal"; // ✅ import the modal
+import LoginModal from "../components/LoginModal";
+
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const scrollToCards = () => {
@@ -53,9 +57,9 @@ const Hero = () => {
           >
             <defs>
               <linearGradient id="fishWaveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#38bdf8" />   {/* Light lake blue */}
-                <stop offset="50%" stopColor="#06b6d4" />  {/* Aquamarine */}
-                <stop offset="100%" stopColor="#22d3ee" /> {/* Sky aqua */}
+                <stop offset="0%" stopColor="#38bdf8" />
+                <stop offset="50%" stopColor="#06b6d4" />
+                <stop offset="100%" stopColor="#22d3ee" />
               </linearGradient>
 
               <style>{`
@@ -128,6 +132,7 @@ const Hero = () => {
         onLoginSuccess={(user) => {
           console.log("Logged in user:", user);
           setIsLoginOpen(false);
+          navigate("/fish/aspiring-farmer");
         }}
       />
     </section>

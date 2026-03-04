@@ -63,30 +63,94 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
   }, [onClose]);
 
   const validateStep = () => {
-    const e = {};
+    const errors = {};
+    const trimmed = {
+      full_name: formData.full_name?.trim() || "",
+      email: formData.email?.trim() || "",
+      phone: formData.phone?.trim() || "",
+    };
+
+    
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+
+    const password = formData.password || "";
+    const confirmPassword = formData.confirmPassword || "";
+
+    // -------------------------------------------------------------
+    // STEP 1 — Account Details
+    // -------------------------------------------------------------
     if (step === 1) {
-      if (!formData.full_name.trim()) e.full_name = "Full name is required.";
-      if (!formData.email.match(/^\S+@\S+\.\S+$/)) e.email = "Valid email required.";
-      if (!formData.phone.trim()) e.phone = "Phone is required.";
-      if (!formData.password || formData.password.length < 8)
-        e.password = "Password must be at least 8 characters long.";
 
-      if (/^\d+$/.test(formData.password))
-        e.password = "Password cannot be entirely numeric.";
+      if (!trimmed.full_name) {
+        errors.full_name = "Full name is required.";
+      }
 
-      if (formData.password !== formData.confirmPassword)
-        e.confirmPassword = "Passwords do not match";
+      if (!trimmed.email) {
+        errors.email = "Email is required.";
+      } else if (!emailRegex.test(trimmed.email)) {
+        errors.email = "Enter a valid email address.";
+      }
 
-    } else if (step === 2) {
-      if (!formData.county.trim()) e.county = "County/Region is required.";
-    } else if (step === 3) {
-      if (!formData.place_of_farming) e.place_of_farming = "Select where you will farm.";
-      if (!formData.fish_species.length)
-        e.fish_species = "Select at least one fish species.";
-      if (!formData.age_group) e.age_group = "Select the fish age group.";
+      if (!trimmed.phone) {
+        errors.phone = "Phone number is required.";
+      }
+
+      if (!password) {
+        errors.password = "Password is required.";
+      } else {
+        if (password.length < 8) {
+          errors.password = "Password must be at least 8 characters long.";
+        } else if (/^\d+$/.test(password)) {
+          errors.password = "Password cannot be entirely numeric.";
+        } else if (!/[A-Z]/.test(password)) {
+          errors.password = "Password must contain at least one uppercase letter.";
+        } else if (!/[a-z]/.test(password)) {
+          errors.password = "Password must contain at least one lowercase letter.";
+        } else if (!/\d/.test(password)) {
+          errors.password = "Password must contain at least one number.";
+        }
+      }
+
+      if (!confirmPassword) {
+        errors.confirmPassword = "Please confirm your password.";
+      } else if (password !== confirmPassword) {
+        errors.confirmPassword = "Passwords do not match.";
+      }
     }
-    setErrors(e);
-    return Object.keys(e).length === 0;
+
+    // -------------------------------------------------------------
+    // STEP 2 — Location
+    // -------------------------------------------------------------
+    if (step === 2) {
+      if (!formData.county) {
+        errors.county = "Please select your county.";
+      }
+
+      if (!formData.subcounty) {
+        errors.subcounty = "Please select your subcounty.";
+      }
+    }
+
+    // -------------------------------------------------------------
+    // STEP 3 — Farming Details
+    // -------------------------------------------------------------
+    if (step === 3) {
+      if (!formData.place_of_farming) {
+        errors.place_of_farming = "Select where you will farm.";
+      }
+
+      if (!formData.fish_species) {
+        errors.fish_species = "Select at least one fish species.";
+      }
+
+      if (!formData.age_group) {
+        errors.age_group = "Select the fish age group.";
+      }
+    }
+
+    setErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const next = async () => {
@@ -115,14 +179,14 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
 
         if (userId) {
           // Update existing user instead of recreating
-          res = await fetch(`${API_URL}/auth/register/step1/${userId}/`, {
+          res = await fetch(`${API_URL}/accounts/register/step1/${userId}/`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
         } else {
           // Create new user
-          res = await fetch(`${API_URL}/auth/register/step1/`, {
+          res = await fetch(`${API_URL}/accounts/register/step1/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -137,23 +201,32 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
         setErrors({});
         return;
       }
-
       // -------------------------------------------------------------
       // STEP 2 — Location Details
       // -------------------------------------------------------------
       if (step === 2) {
         if (!userId) throw new Error("User ID missing from Step 1!");
 
-        const res = await fetch(`${API_URL}/auth/register/step2/${userId}/`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            county: formData.county,
-            subcounty: formData.subcounty,
-          }),
-        });
+        const res = await fetch(
+          `${API_URL}/accounts/register/step2/${userId}/`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              county: Number(formData.county),
+              subcounty: formData.subcounty
+                ? Number(formData.subcounty)
+                : null,
+            }),
+          }
+        );
 
-        if (!res.ok) throw new Error("Failed to save Step 2");
+        if (!res.ok) {
+          const errorData = await res.json();
+          setErrors(errorData);
+          throw new Error("Failed to save Step 2");
+        }
+
         setStep(3);
         setErrors({});
         return;
@@ -165,17 +238,33 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       if (step === 3) {
         if (!userId) throw new Error("User ID missing from Step 1!");
 
-        const res = await fetch(`${API_URL}/auth/register/step3/${userId}/`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            place_of_farming: formData.place_of_farming?.toLowerCase(),
-            fish_species: formData.fish_species?.map((s) => s.toLowerCase()),
-            age_group: formData.age_group?.toLowerCase(),
-          }),
-        });
+        const res = await fetch(
+          `${API_URL}/accounts/register/step3/${userId}/`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              place_of_farming: formData.place_of_farming
+                ? Number(formData.place_of_farming)
+                : null,
 
-        if (!res.ok) throw new Error("Failed to save Step 3");
+              fish_species: formData.fish_species
+                ? Number(formData.fish_species)
+                : null,
+
+              age_group: formData.age_group
+                ? Number(formData.age_group)
+                : null,
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          setErrors(errorData);
+          throw new Error("Failed to save Step 3");
+        }
+
         setStep(4);
         setErrors({});
         return;
@@ -185,12 +274,14 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
       // STEP 4 — Confirmation
       // -------------------------------------------------------------
       if (step === 4) {
-        const res = await fetch(`${API_URL}/auth/register/step4/`, {
+        const res = await fetch(`${API_URL}/accounts/register/step4/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: userId }),
         });
+
         if (!res.ok) throw new Error("Failed to complete registration");
+
         const data = await res.json();
 
         alert(`Registration complete! Your username is ${data.username}`);
@@ -207,37 +298,88 @@ const RegistrationModal = ({ selectedRole, open, onClose }) => {
 
   const back = async () => {
     setErrors({});
-    // If returning from Step 2 to Step 1
-    if (step === 2 && userId) {
-      try {
-        const res = await fetch(`${API_URL}/auth/register/step1/${userId}/`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+
+    if (!userId) {
+      setStep((s) => Math.max(1, s - 1));
+      return;
+    }
+
+    try {
+      // -------------------------------------------------------------
+      // FROM STEP 2 → LOAD STEP 1 DATA
+      // -------------------------------------------------------------
+      if (step === 2) {
+        const res = await fetch(
+          `${API_URL}/accounts/register/step1/${userId}/`
+        );
 
         if (res.ok) {
           const data = await res.json();
 
-          // Update the form fields with data from backend
           setFormData((prev) => ({
             ...prev,
-            full_name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.first_name || data.last_name || "",
+            full_name:
+              data.first_name && data.last_name
+                ? `${data.first_name} ${data.last_name}`
+                : data.first_name || data.last_name || "",
             email: data.email || "",
             phone: data.phone || "",
             username: data.username || "",
           }));
         }
-      } catch (err) {
-        console.error("Failed to fetch user data:", err);
       }
+
+      // -------------------------------------------------------------
+      // FROM STEP 3 → LOAD STEP 2 DATA
+      // -------------------------------------------------------------
+      if (step === 3) {
+        const res = await fetch(
+          `${API_URL}/accounts/register/step2/${userId}/`
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+
+          setFormData((prev) => ({
+            ...prev,
+            county: data.county || "",
+            subcounty: data.subcounty || "",
+          }));
+        }
+      }
+
+      // -------------------------------------------------------------
+      // FROM STEP 4 → LOAD STEP 3 DATA
+      // -------------------------------------------------------------
+      if (step === 4) {
+        const res = await fetch(
+          `${API_URL}/accounts/register/step3/${userId}/`
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+
+          setFormData((prev) => ({
+            ...prev,
+            place_of_farming: data.place_of_farming || "",
+            age_group: data.age_group || "",
+            fish_species: data.fish_species || "",
+          }));
+        }
+      }
+
+    } catch (err) {
+      console.error("Back button fetch failed:", err);
     }
+
     setStep((s) => Math.max(1, s - 1));
   };
+
   const handleSubmit = async () => {
     if (!userId) return alert("User ID not found — please complete previous steps.");
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/auth/register/step4/${userId}/`, {
+      const res = await fetch(`${API_URL}/accounts/register/step4/${userId}/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
