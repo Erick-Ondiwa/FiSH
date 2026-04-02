@@ -1,26 +1,32 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { motion } from "framer-motion";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { API_URL } from "../../../../../api";
+import { MODULE_REGISTRY } from "../../modules";
 
 const MainContent = ({ activeSection }) => {
   const [guide, setGuide] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const token = localStorage.getItem("access_token");
+
+  const isModule = activeSection?.type === "module";
+  const ModuleComponent = MODULE_REGISTRY[activeSection?.slug];
+
+  // --------------------------------------------------
+  // Fetch Guide ONLY if type = guide
+  // --------------------------------------------------
   useEffect(() => {
-    if (!activeSection) return;
+    if (!activeSection || isModule) return;
 
     const fetchGuide = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const token = localStorage.getItem("access_token");
-
         const res = await axios.get(
-          `${API_URL}/advisory/guide/${activeSection}/`,
+          `${API_URL}/advisory/guide/${activeSection.slug}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -42,128 +48,84 @@ const MainContent = ({ activeSection }) => {
     fetchGuide();
   }, [activeSection]);
 
-  // -----------------------------
-  // Loading State
-  // -----------------------------
+  // --------------------------------------------------
+  // MODULE RENDERING (NO API CALL)
+  // --------------------------------------------------
+  if (isModule && ModuleComponent) {
+    return (
+      <div className="p-10">
+        <ModuleComponent />
+      </div>
+    );
+  }
+
+  // --------------------------------------------------
+  // LOADING
+  // --------------------------------------------------
   if (loading) {
     return (
-      <div className="flex-1 p-10">
-        <p className="text-teal-700 animate-pulse">
-          Loading advisory content...
+      <div className="p-10">
+        <p className="text-teal-600 animate-pulse">
+          Loading advisory...
         </p>
       </div>
     );
   }
 
-  // -----------------------------
-  // Error State
-  // -----------------------------
+  // --------------------------------------------------
+  // ERROR
+  // --------------------------------------------------
   if (error) {
     return (
-      <div className="flex-1 p-10">
-        <div className="flex items-center gap-2 text-red-500">
-          <AlertCircle size={20} />
-          <p>{error}</p>
-        </div>
+      <div className="p-10 text-red-500">
+        {error}
       </div>
     );
   }
 
-  // -----------------------------
-  // Empty State
-  // -----------------------------
+  // --------------------------------------------------
+  // EMPTY
+  // --------------------------------------------------
   if (!guide) {
     return (
-      <div className="flex-1 p-10">
-        <p className="text-slate-600">
-          Select a section to view advisory guidance.
-        </p>
+      <div className="p-10 text-gray-500">
+        Select a section
       </div>
     );
   }
 
+  // --------------------------------------------------
+  // GUIDE RENDERING
+  // --------------------------------------------------
   return (
-    <div className="flex-1 p-10 overflow-y-auto relative z-10">
-      
-      {/* Section Header */}
-      <div className="mb-10">
-        <h2 className="text-3xl font-bold text-teal-900">
-          {guide.section.name}
-        </h2>
-        {guide.introduction && (
-          <p className="mt-3 text-slate-700 max-w-3xl leading-relaxed">
-            {guide.introduction}
-          </p>
-        )}
-      </div>
+    <div className="p-10">
+      <h2 className="text-3xl font-bold">
+        {guide.section.name}
+      </h2>
 
-      {/* Steps Grid */}
-      <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <p className="mt-3 text-gray-600">
+        {guide.introduction}
+      </p>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
         {guide.steps.map((step) => (
-          <motion.div
-            key={step.id}
-            whileHover={{ scale: 1.03, y: -4 }}
-            transition={{ type: "spring", stiffness: 200 }}
-            className="
-              rounded-2xl 
-              overflow-hidden 
-              backdrop-blur-lg 
-              bg-gradient-to-br 
-              from-white/60 
-              via-cyan-50/70 
-              to-teal-100/60
-              border border-white/50
-              shadow-xl
-              hover:shadow-2xl
-              transition-all
-              duration-300
-            "
-          >
-            {/* Image */}                                                                                                                                               
+          <div key={step.id} className="bg-white p-5 rounded-xl shadow">
             {step.image_url && (
               <img
                 src={step.image_url}
                 alt={step.title}
-                className="w-full h-44 object-cover"
+                className="h-40 w-full object-cover rounded"
               />
             )}
 
-            <div className="p-6">
-              {/* Step Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-teal-900">
-                  Step {step.step_number}: {step.title}
-                </h3>
+            <h3 className="font-bold mt-3">
+              Step {step.step_number}: {step.title}
+            </h3>
 
-                {step.is_mandatory && (
-                  <span className="text-xs bg-cyan-200 text-cyan-900 px-3 py-1 rounded-full font-medium">
-                    Mandatory
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-                {step.description}
-              </p>
-
-              {/* Action Button */}
-              <button className="
-                mt-5 
-                flex 
-                items-center 
-                gap-2 
-                text-sm 
-                font-semibold 
-                text-teal-700 
-                hover:text-teal-900
-                transition-colors
-              ">
-                <CheckCircle size={16} />
-                Start Step
-              </button>
-            </div>
-          </motion.div>
+            <p className="text-sm text-gray-600 mt-2">
+              {step.description}
+            </p>
+          </div>
         ))}
       </div>
     </div>

@@ -6,8 +6,8 @@ from .models import (
     AdvisoryGuide,
     AdvisoryStep,
     UserOnboardingProgress,
+    Supplier,
 )
-
 
 # ============================================================
 # 1️⃣ Advisory Step Inline (Editable inside Guide)
@@ -44,7 +44,7 @@ class AdvisoryStepInline(admin.TabularInline):
 
 @admin.register(AdvisorySection)
 class AdvisorySectionAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "order", "is_active")
+    list_display = ("type", "name", "slug", "order", "is_active")
     list_editable = ("order", "is_active")
     search_fields = ("name",)
     prepopulated_fields = {"slug": ("name",)}
@@ -130,6 +130,57 @@ class AdvisoryStepAdmin(admin.ModelAdmin):
 
     list_select_related = ("guide",)
 
+
+# Supplier
+# ============================================================
+# 6️⃣ Supplier Admin
+# ============================================================
+
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "supplier_type",
+        "county",
+        "subcounty",
+        "contact_phone",
+        "is_verified",
+        "created_at",
+    )
+    
+    list_filter = (
+        "supplier_type",
+        "is_verified",
+        "county",
+        "fish_species",
+    )
+    
+    search_fields = ("name", "contact_phone", "email")
+    
+    # Use horizontal filter for ManyToMany relationship
+    filter_horizontal = ("fish_species",)
+    
+    # Enables quick searching for ForeignKeys
+    autocomplete_fields = ("county", "subcounty")
+    
+    list_editable = ("is_verified",)
+    
+    list_select_related = ("county", "subcounty")
+
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("name", "supplier_type", "is_verified")
+        }),
+        ("Location Details", {
+            "fields": ("county", "subcounty")
+        }),
+        ("Offerings", {
+            "fields": ("fish_species",)
+        }),
+        ("Contact Information", {
+            "fields": ("contact_phone", "email")
+        }),
+    )
 
 # ============================================================
 # 5️⃣ User Onboarding Progress Admin

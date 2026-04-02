@@ -1,6 +1,9 @@
 from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
+from django.utils import timezone
+
+User = settings.AUTH_USER_MODEL
 
 from core.models import (
     County,
@@ -9,7 +12,6 @@ from core.models import (
     FishAgeGroup,
     FarmingMethod,
 )
-
 # ============================================================
 # Advisory Section (Sidebar Navigation)
 # ============================================================
@@ -21,6 +23,24 @@ class AdvisorySection(models.Model):
     - Farming Place Setup
     - Sourcing Fish
     """
+
+    SECTION_TYPE_CHOICES = [
+        ("guide", "Guide"),
+        ("module", "Module"),
+    ]
+
+    type = models.CharField(
+        max_length=10,
+        choices=SECTION_TYPE_CHOICES,
+        default="guide"
+    )
+
+    module_key = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Frontend module identifier (e.g., growth_prediction)"
+    )
 
     name = models.CharField(max_length=150)
     slug = models.SlugField(unique=True)
@@ -248,3 +268,237 @@ class Supplier(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.supplier_type})"
+
+class Conversation(models.Model):
+    participants = models.ManyToManyField(User, related_name="conversations")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Conversation {self.id}"
+
+class Message(models.Model):
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="messages"
+    )
+
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_messages"
+    )
+
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sender} -> {self.content[:20]}"
+
+class StockingGuideline(models.Model):
+    """
+    Provides recommended stocking practices for fish farming.
+    """
+
+    county = models.ForeignKey(
+        County,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="stocking_guidelines"
+    )
+
+    fish_species = models.ForeignKey(
+        FishSpecies,
+        on_delete=models.CASCADE,
+        related_name="stocking_guidelines"
+    )
+
+    farming_method = models.ForeignKey(
+        FarmingMethod,
+        on_delete=models.CASCADE,
+        related_name="stocking_guidelines"
+    )
+
+    age_group = models.ForeignKey(
+        FishAgeGroup,
+        on_delete=models.CASCADE,
+        related_name="stocking_guidelines"
+    )
+
+    # Core guideline fields
+    recommended_density = models.CharField(
+        max_length=100,
+        help_text="e.g., 2–4 fish per m²"
+    )
+
+    min_stock = models.PositiveIntegerField(null=True, blank=True)
+    max_stock = models.PositiveIntegerField(null=True, blank=True)
+
+    water_volume_requirement = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="e.g., 1000L per 100 fish"
+    )
+
+    acclimatization_procedure = models.TextField()
+
+    stocking_tips = models.TextField()
+
+    # Metadata
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["fish_species", "farming_method", "age_group"]),
+        ]
+
+    def __str__(self):
+        return f"{self.fish_species.name} - {self.farming_method.name} ({self.age_group.name})"
+
+class FishSourcing(models.Model):
+    """
+    Sourcing guidance for fish fingerlings/juveniles.
+    """
+
+    county = models.ForeignKey(
+        County,
+        on_delete=models.CASCADE,
+        related_name="sourcing_guides"
+    )
+
+    fish_species = models.ForeignKey(
+        FishSpecies,
+        on_delete=models.CASCADE,
+        related_name="sourcing_guides"
+    )
+
+    age_group = models.ForeignKey(
+        FishAgeGroup,
+        on_delete=models.CASCADE,
+        related_name="sourcing_guides"
+    )
+
+    # Guidance
+    sourcing_guidelines = models.TextField()
+
+    recommended_sources = models.TextField(
+        help_text="Where to buy (hatcheries, certified farms, etc.)"
+    )
+
+    transportation_tips = models.TextField(
+        help_text="How to transport fish safely"
+    )
+
+    # Pricing
+    average_price_min = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    average_price_max = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    # Metadata
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["county", "fish_species", "age_group"]),
+        ]
+
+    def __str__(self):
+        return f"{self.fish_species.name} ({self.age_group.name}) in {self.county.name}"
+
+
+class FishQualityChecklist(models.Model):
+    """
+    Checklist used to verify fish quality before purchase.
+    """
+
+    fish_species = models.ForeignKey(
+        FishSpecies,
+        on_delete=models.CASCADE,
+        related_name="quality_checklists"
+    )
+
+    age_group = models.ForeignKey(
+        FishAgeGroup,
+        on_delete=models.CASCADE,
+        related_name="quality_checklists"
+    )
+
+    # Checklist items
+    physical_appearance = models.TextField(
+        help_text="e.g., shiny skin, no wounds"
+    )
+
+    behavior = models.TextField(
+        help_text="e.g., active swimming, responsive"
+    )
+
+    size_uniformity = models.TextField(
+        help_text="e.g., similar sizes across batch"
+    )
+
+    health_indicators = models.TextField(
+        help_text="e.g., no lesions, no discoloration"
+    )
+
+    rejection_signs = models.TextField(
+        help_text="Conditions under which fish should NOT be purchased"
+    )
+
+    additional_notes = models.TextField(blank=True, null=True)
+
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["fish_species", "age_group"]),
+        ]
+
+    def __str__(self):
+        return f"Quality Checklist - {self.fish_species.name} ({self.age_group.name})"
+
+# ---------------------------------------------------------------------------------
+#  FEEDING MODELS
+
+class FeedingGuideline(models.Model):
+    """
+    Defines recommended feeding practices.
+    """
+
+    fish_species = models.ForeignKey(FishSpecies, on_delete=models.CASCADE)
+    age_group = models.ForeignKey(FishAgeGroup, on_delete=models.CASCADE)
+    farming_method = models.ForeignKey(FarmingMethod, on_delete=models.CASCADE)
+
+    feeding_frequency_per_day = models.PositiveIntegerField(
+        help_text="e.g., 2–3 times per day"
+    )
+
+    feed_type = models.CharField(max_length=100)
+    feeding_percentage_body_weight = models.FloatField(
+        help_text="e.g., 3% of body weight"
+    )
+
+    feeding_times = models.JSONField(
+        help_text="Example: ['08:00', '13:00', '17:00']"
+    )
+
+    instructions = models.TextField()
+
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.fish_species} - {self.age_group}"
