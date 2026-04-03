@@ -2,11 +2,54 @@ from pathlib import Path
 import os
 from decouple import config
 
+# from dotenv import load_dotenv
+
+# # =========================
+# # LOAD ENV VARIABLES
+# # =========================
+# load_dotenv()
+
+# # =========================
+# # BASE PATHS
+# # =========================
+# BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+
+# DATA_DIR = os.path.join(BASE_DIR, "data_sets")
+# LOG_DIR = os.path.join(BASE_DIR, "logs")
+
+# # Database URL
+# DATABASE_URL = os.getenv("DATABASE_URL")
+
+# # =========================
+# # DATA PATHS
+# # =========================
+# TRAIN_DATA_PATH = os.getenv(
+#     "TRAIN_DATA_PATH",
+#     os.path.join(DATA_DIR, "UNSW_NB15_training-set.csv")
+# )
+
+# TEST_DATA_PATH = os.getenv(
+#     "TEST_DATA_PATH",
+#     os.path.join(DATA_DIR, "UNSW_NB15_testing-set.csv")
+# )
+
+# # =========================
+# # MODEL ARTIFACTS
+# # =========================
+# MODEL_DIR = os.path.join(BASE_DIR, "app/models/artifacts")
+
+# MODEL_PATH = os.getenv(
+#     "MODEL_PATH",
+#     os.path.join(MODEL_DIR, "isolation_forest.pkl")
+# )
+
+# SCALER_PATH = os.getenv(
+#     "SCALER_PATH",
+#     os.path.join(MODEL_DIR, "scaler.pkl")
+# )
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # Application definition
 
@@ -30,6 +73,8 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "accounts.apps.AccountsConfig",
     "advisory.apps.AdvisoryConfig",
+    "ML",
+    "farm.apps.FarmConfig",
 ]
 
 REST_FRAMEWORK = {
