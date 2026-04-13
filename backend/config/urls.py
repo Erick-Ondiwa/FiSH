@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/accounts/", include("accounts.urls")),
     path('api/advisory/', include('advisory.urls')),
     path('api/ml/', include('ML.urls')),
+     path('api/feeding/', include('feeding.urls')),
     path('api/faarm/', include('farm.urls')),
 
 ]

@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "advisory.apps.AdvisoryConfig",
     "ML",
+    "feeding.apps.FeedingConfig",
     "farm.apps.FarmConfig",
 ]
 
@@ -187,7 +188,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "Africa/Nairobi"
 
 USE_I18N = True
 
