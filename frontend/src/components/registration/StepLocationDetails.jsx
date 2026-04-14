@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import { MapPin } from "lucide-react";
 import { API_URL } from "../../../api";
 
 const StepLocationDetails = ({ formData, setFormData, errors }) => {
@@ -8,7 +8,9 @@ const StepLocationDetails = ({ formData, setFormData, errors }) => {
   const [loadingCounties, setLoadingCounties] = useState(true);
   const [loadingSubcounties, setLoadingSubcounties] = useState(false);
 
-  // Fetch counties on mount
+  // -------------------------
+  // FETCH COUNTIES
+  // -------------------------
   useEffect(() => {
     const fetchCounties = async () => {
       try {
@@ -25,7 +27,9 @@ const StepLocationDetails = ({ formData, setFormData, errors }) => {
     fetchCounties();
   }, []);
 
-  // Fetch subcounties when county changes
+  // -------------------------
+  // FETCH SUBCOUNTIES
+  // -------------------------
   useEffect(() => {
     if (!formData.county) {
       setSubcounties([]);
@@ -50,59 +54,109 @@ const StepLocationDetails = ({ formData, setFormData, errors }) => {
     fetchSubcounties();
   }, [formData.county]);
 
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-blue-900">
-        Location Details
-      </h3>
+  // -------------------------
+  // STYLES
+  // -------------------------
+  const input =
+    "w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/40";
 
-      {/* County Dropdown */}
+  const label = "text-xs text-slate-400 mb-1 block";
+
+  return (
+    <div className="space-y-6">
+      {/* HEADER */}
       <div>
-        <select
-          value={formData.county || ""}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              county: Number(e.target.value),
-              subcounty: "",
-            })
-          }
-          className="w-full bg-white border px-4 py-2 rounded-lg"
-        >
-          <option value="">Select County</option>
-          {loadingCounties && <option>Loading...</option>}
-          {counties.map((county) => (
-            <option key={county.id} value={county.id}>
-              {county.name}
-            </option>
-          ))}
-        </select>
-        {errors.county && (
-          <p className="text-xs text-red-500 mt-1">{errors.county}</p>
-        )}
+        <h3 className="text-lg font-semibold text-white">
+          Location Details
+        </h3>
+        <p className="text-sm text-slate-400">
+          Where is your farm located?
+        </p>
       </div>
 
-      {/* Subcounty Dropdown */}
-      <div>
-        <select
-          value={formData.subcounty || ""}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              subcounty: Number(e.target.value),
-            })
-          }
-          disabled={!formData.county}
-          className="w-full bg-white border px-4 py-2 rounded-lg"
-        >
-          <option value="">Select Subcounty</option>
-          {loadingSubcounties && <option>Loading...</option>}
-          {subcounties.map((subcounty) => (
-            <option key={subcounty.id} value={subcounty.id}>
-              {subcounty.name}
-            </option>
-          ))}
-        </select>
+      <div className="grid gap-5">
+
+        {/* COUNTY */}
+        <div className="space-y-1">
+          <label className={label}>County</label>
+          <div className="relative">
+            <MapPin
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+
+            <select
+              value={formData.county || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  county: Number(e.target.value),
+                  subcounty: "",
+                })
+              }
+              className={`${input} pl-9`}
+            >
+              <option value="">
+                {loadingCounties ? "Loading counties..." : "Select County"}
+              </option>
+
+              {counties.map((county) => (
+                <option key={county.id} value={county.id}>
+                  {county.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {errors.county && (
+            <p className="text-xs text-red-400">{errors.county}</p>
+          )}
+        </div>
+
+        {/* SUBCOUNTY */}
+        <div className="space-y-1">
+          <label className={label}>Subcounty</label>
+
+          <div className="relative">
+            <MapPin
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+
+            <select
+              value={formData.subcounty || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  subcounty: Number(e.target.value),
+                })
+              }
+              disabled={!formData.county || loadingSubcounties}
+              className={`${input} pl-9 disabled:opacity-50`}
+            >
+              <option value="">
+                {!formData.county
+                  ? "Select county first"
+                  : loadingSubcounties
+                  ? "Loading subcounties..."
+                  : "Select Subcounty"}
+              </option>
+
+              {subcounties.map((subcounty) => (
+                <option key={subcounty.id} value={subcounty.id}>
+                  {subcounty.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {errors.subcounty && (
+            <p className="text-xs text-red-400">
+              {errors.subcounty}
+            </p>
+          )}
+        </div>
+
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import { Layers, Fish, Clock } from "lucide-react";
 import { API_URL } from "../../../api";
 
 const StepFarmingDetails = ({ formData, setFormData, errors }) => {
@@ -7,7 +7,9 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
   const [speciesList, setSpeciesList] = useState([]);
   const [ageGroups, setAgeGroups] = useState([]);
 
-  // Fetch all lookup data on mount
+  // -------------------------
+  // FETCH DATA
+  // -------------------------
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -28,7 +30,9 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
     fetchData();
   }, []);
 
-  // Toggle species (many-to-many IDs)
+  // -------------------------
+  // TOGGLE MULTI SPECIES ✅ FIXED
+  // -------------------------
   const toggleSpecies = (id) => {
     const current = formData.fish_species || [];
 
@@ -39,111 +43,138 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
     setFormData({ ...formData, fish_species: next });
   };
 
+  // -------------------------
+  // STYLES
+  // -------------------------
+  const section = "space-y-3";
+  const label = "text-xs text-slate-400 uppercase tracking-wider";
+  
+  const pillBase =
+    "px-4 py-2 rounded-lg text-sm border transition flex items-center gap-2";
+
+  const activePill =
+    "bg-teal-500 text-white border-teal-500";
+
+  const inactivePill =
+    "bg-slate-900 text-slate-300 border-slate-700 hover:border-teal-400";
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-blue-900">
-        Farming Details
-      </h3>
+    <div className="space-y-6">
+      {/* HEADER */}
+      <div>
+        <h3 className="text-lg font-semibold text-white">
+          Farming Details
+        </h3>
+        <p className="text-sm text-slate-400">
+          Configure your farming setup and fish profile.
+        </p>
+      </div>
 
-      <div className="grid gap-4">
+      <div className="space-y-6">
 
-        {/* Farming Method */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Place of farming
-          </label>
-          <div className="flex flex-wrap gap-3">
-            {farmingMethods.map((method) => (
-              <button
-                key={method.id}
-                type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    place_of_farming: method.id,
-                  })
-                }
-                className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.place_of_farming === method.id
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-blue-800 border-gray-300"
-                }`}
-              >
-                {method.name}
-              </button>
-            ))}
+        {/* FARMING METHOD */}
+        <div className={section}>
+          <label className={label}>Place of Farming</label>
+
+          <div className="flex flex-wrap gap-2">
+            {farmingMethods.map((method) => {
+              const active = formData.place_of_farming === method.id;
+
+              return (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      place_of_farming: method.id,
+                    })
+                  }
+                  className={`${pillBase} ${
+                    active ? activePill : inactivePill
+                  }`}
+                >
+                  <Layers size={14} />
+                  {method.name}
+                </button>
+              );
+            })}
           </div>
+
           {errors.place_of_farming && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-red-400">
               {errors.place_of_farming}
             </p>
           )}
         </div>
 
-        {/* Fish Species (Multi-select) */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Fish Species
-          </label>
-          <div className="flex flex-wrap gap-3">
-            {speciesList.map((species) => (
-              <button
-                key={species.id}
-                type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    fish_species: species.id,
-                  })
-                }
-                className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.fish_species === species.id
-                    ? "bg-cyan-600 text-white border-cyan-600"
-                    : "bg-white text-blue-800 border-gray-300"
-                }`}
-              >
-                {species.name}
-              </button>
-            ))}
+        {/* SPECIES (MULTI-SELECT) */}
+        <div className={section}>
+          <label className={label}>Fish Species</label>
+
+          <div className="flex flex-wrap gap-2">
+            {speciesList.map((species) => {
+              const active =
+                (formData.fish_species || []).includes(species.id);
+
+              return (
+                <button
+                  key={species.id}
+                  type="button"
+                  onClick={() => toggleSpecies(species.id)}
+                  className={`${pillBase} ${
+                    active ? activePill : inactivePill
+                  }`}
+                >
+                  <Fish size={14} />
+                  {species.name}
+                </button>
+              );
+            })}
           </div>
-          <small className="text-xs text-gray-500">
-            Choose one or more species.
-          </small>
+
+          <p className="text-xs text-slate-500">
+            Select one or more species.
+          </p>
+
           {errors.fish_species && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-red-400">
               {errors.fish_species}
             </p>
           )}
         </div>
 
-        {/* Age Group */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Age Group
-          </label>
-          <div className="flex flex-wrap gap-3">
-            {ageGroups.map((age) => (
-              <button
-                key={age.id}
-                type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    age_group: age.id,
-                  })
-                }
-                className={`px-4 py-2 rounded-full text-sm border transition ${
-                  formData.age_group === age.id
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-blue-800 border-gray-300"
-                }`}
-              >
-                {age.name}
-              </button>
-            ))}
+        {/* AGE GROUP */}
+        <div className={section}>
+          <label className={label}>Fish Age Group</label>
+
+          <div className="flex flex-wrap gap-2">
+            {ageGroups.map((age) => {
+              const active = formData.age_group === age.id;
+
+              return (
+                <button
+                  key={age.id}
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      age_group: age.id,
+                    })
+                  }
+                  className={`${pillBase} ${
+                    active ? activePill : inactivePill
+                  }`}
+                >
+                  <Clock size={14} />
+                  {age.name}
+                </button>
+              );
+            })}
           </div>
+
           {errors.age_group && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-red-400">
               {errors.age_group}
             </p>
           )}

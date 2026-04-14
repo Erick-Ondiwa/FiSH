@@ -21,24 +21,16 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onRegister }) => {
 
     try {
       const res = await axios.post(`${API_URL}/accounts/token/`, {
-        email: formData.email, // or email if customized
+        email: formData.email,
         password: formData.password,
       });
 
       const { access, refresh } = res.data;
 
-      // ✅ Store tokens
       localStorage.setItem("access_token", access);
       localStorage.setItem("refresh_token", refresh);
 
-      // ✅ Optionally fetch user profile
-      // const profileRes = await axios.get(`${API_URL}/accounts/me/`, {
-      //   headers: {
-      //     Authorization: `Bearer ${access}`,
-      //   },
-      // });
-
-     onLoginSuccess(res.data.user);
+      onLoginSuccess(res.data.user);
       onClose();
     } catch (err) {
       setError(
@@ -57,125 +49,133 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onRegister }) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Background overlay */}
+          {/* 🔹 DARK OVERLAY */}
           <motion.div
-            className="fixed inset-0 bg-gradient-to-br from-blue-900/40 via-blue-700/30 to-teal-600/20 backdrop-blur-md z-40"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
 
-          {/* Modal */}
+          {/* 🔹 MODAL */}
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-            transition={{ duration: 0.35, ease: 'easeInOut' }}
+            exit={{ opacity: 0, scale: 0.95, y: 30 }}
           >
-            <div className="relative z-50 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl w-[90%] max-w-md p-8 overflow-hidden">
-              
-              {/* Close button */}
+            <div className="relative w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8">
+
+              {/* CLOSE */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-white hover:text-red-400 transition z-50 cursor-pointer"
+                className="absolute top-4 right-4 text-slate-400 hover:text-red-400 transition"
               >
-                <X size={24} />
+                <X size={22} />
               </button>
-              {/* Floating gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-200/30 via-teal-100/10 to-blue-300/20 blur-2xl"></div>
 
-              {/* Content */}
-              <div className="relative z-10">
-                <div className="flex justify-center mb-3">
-                  <motion.div
-                    initial={{ rotate: -10 }}
-                    animate={{ rotate: 10 }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatType: "reverse",
-                    }}
-                  >
-                    <Fish className="text-blue-600" size={36} />
-                  </motion.div>
+              {/* ICON */}
+              <div className="flex justify-center mb-4">
+                <motion.div
+                  initial={{ rotate: -10 }}
+                  animate={{ rotate: 10 }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                  }}
+                  className="p-3 rounded-xl bg-teal-500/10 text-teal-400"
+                >
+                  <Fish size={28} />
+                </motion.div>
+              </div>
+
+              {/* TITLE */}
+              <h2 className="text-2xl font-bold text-center text-white mb-1">
+                Welcome Back
+              </h2>
+              <p className="text-center text-sm text-slate-400 mb-6">
+                Sign in to continue to FiSH
+              </p>
+
+              {/* FORM */}
+              <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* EMAIL */}
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/40"
+                    placeholder="you@example.com"
+                    required
+                  />
                 </div>
 
-                <h2 className="text-2xl font-semibold text-center text-blue-800 mb-6">
-                  Welcome Back to FiSH
-                </h2>
-
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
+                {/* PASSWORD */}
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Password
+                  </label>
+                  <div className="relative">
                     <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
                       onChange={handleChange}
-                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-400 focus:outline-none bg-white/80 backdrop-blur-md"
-                      placeholder="you@example.com"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/40"
+                      placeholder="••••••••"
                       required
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-400 focus:outline-none bg-white/80 backdrop-blur-md"
-                        placeholder="••••••••"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-blue-700 transition cursor-pointer"
-                      >
-                        {showPassword ? "Hide" : "Show"}
-                      </button>
-                    </div>
-                  </div>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-600 text-sm text-center"
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-500 hover:text-teal-400 text-xs"
                     >
-                      {error}
-                    </motion.div>
-                  )}
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
 
-                  <motion.button
-                    type="submit"
-                    whileTap={{ scale: 0.97 }}
-                    disabled={loading}
-                    className="w-full py-3 rounded-xl font-semibold text-white shadow-lg bg-gradient-to-r from-blue-600 via-teal-500 to-blue-700 hover:from-blue-700 hover:to-teal-600 transition-all duration-300 cursor-pointer"
+                {/* ERROR */}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-red-400 text-sm text-center"
                   >
-                    {loading ? "Signing in..." : "Login"}
-                  </motion.button>
-                </form>
+                    {error}
+                  </motion.div>
+                )}
 
-                <p className="text-center text-sm text-gray-600 mt-5">
-                  Don't have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={onRegister}
-                    className="text-blue-700 font-medium hover:underline cursor-pointer"
-                  >
-                    Register
-                  </button>
-                </p>
-              </div>
+                {/* BUTTON */}
+                <motion.button
+                  type="submit"
+                  whileTap={{ scale: 0.97 }}
+                  disabled={loading}
+                  className="w-full py-3 rounded-lg font-semibold text-white bg-teal-500 hover:bg-teal-600 transition disabled:opacity-40"
+                >
+                  {loading ? "Signing in..." : "Login"}
+                </motion.button>
+              </form>
+
+              {/* FOOTER */}
+              <p className="text-center text-sm text-slate-400 mt-6">
+                Don’t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={onRegister}
+                  className="text-teal-400 hover:underline font-medium"
+                >
+                  Register
+                </button>
+              </p>
             </div>
           </motion.div>
         </>
