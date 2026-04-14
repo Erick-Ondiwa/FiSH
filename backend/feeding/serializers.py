@@ -94,3 +94,54 @@ class SimpleSessionSerializer(serializers.Serializer):
     session = serializers.IntegerField()
     time = serializers.CharField()
     status = serializers.CharField()
+
+
+
+# ==================================================
+# FEEDING HISTORY SERIALIZERS
+# ==================================================
+
+class FeedingHistorySessionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    session = serializers.IntegerField()
+    time = serializers.CharField()
+    status = serializers.CharField()
+    feeds = serializers.ListField(child=serializers.CharField())
+
+
+class FeedingHistoryDaySummarySerializer(serializers.Serializer):
+    completed = serializers.IntegerField()
+    missed = serializers.IntegerField()
+    total = serializers.IntegerField()
+    completion_rate = serializers.IntegerField()
+
+
+class FeedingHistoryDaySerializer(serializers.Serializer):
+    day = serializers.IntegerField()
+    date = serializers.DateField()
+    sessions = FeedingHistorySessionSerializer(many=True)
+    summary = FeedingHistoryDaySummarySerializer()
+
+
+class FeedingHistoryOverallSerializer(serializers.Serializer):
+    total_sessions = serializers.IntegerField()
+    completed_sessions = serializers.IntegerField()
+    completion_rate = serializers.IntegerField()
+
+
+class FeedingHistoryResponseSerializer(serializers.Serializer):
+    days = FeedingHistoryDaySerializer(many=True)
+    overall = FeedingHistoryOverallSerializer()
+
+
+class NotificationSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    message = serializers.CharField()
+    session_id = serializers.IntegerField(required=False)
+    is_read = serializers.BooleanField(required=False)
+    created_at = serializers.DateTimeField(required=False)
+
+
+class NotificationsResponseSerializer(serializers.Serializer):
+    alerts = NotificationSerializer(many=True)
+    count = serializers.IntegerField()

@@ -15,6 +15,7 @@ const MainContent = ({ activeSection }) => {
   const [guide, setGuide] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [feedingView, setFeedingView] = useState("main");
 
   const token = localStorage.getItem("access_token");
   const isModule = activeSection?.type === "module";
@@ -83,17 +84,29 @@ const MainContent = ({ activeSection }) => {
 
   // ===========================
   // MODULE
-  // ===========================
+  // ==========================
+
   if (isModule && ModuleComponent) {
+
     return (
       <div className="flex flex-col h-full">
-        {/* ✅ FULL-WIDTH HEADER */}
-        {ModuleHeader && <ModuleHeader />}
+        
+        {/* HEADER */}
+        {ModuleHeader && (
+          <ModuleHeader
+            onShowNotifications={() => setFeedingView("notifications")}
+            onShowHistory={() => setFeedingView("history")}
+          />
+        )}
 
-        {/* ✅ SCROLLABLE CONTENT */}
+        {/* CONTENT */}
         <ContentWrapper>
-          <ModuleComponent />
+          <ModuleComponent
+            view={feedingView}
+            setView={setFeedingView}
+          />
         </ContentWrapper>
+
       </div>
     );
   }

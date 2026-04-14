@@ -7,7 +7,9 @@ export const useFeedingData = () => {
   // STATE
   // -----------------------------
   const [status, setStatus] = useState(null);
-  const [alerts, setAlerts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationCount, setNotificationCount] = useState(0);
+
   const [error, setError] = useState(null);
 
   const [loadingStatus, setLoadingStatus] = useState(false);
@@ -90,19 +92,25 @@ export const useFeedingData = () => {
     }
   }, [axiosInstance, handleError]);
 
-  // -----------------------------
-  // FETCH ALERTS (LIGHTWEIGHT)
-  // -----------------------------
-  const fetchAlerts = useCallback(async () => {
-    try {
-      const res = await axiosInstance.get("/feeding/alerts/");
-      setAlerts(res.data.alerts || []);
-    } catch (err) {
-      if (err.name !== "CanceledError") {
-        console.error("Alert fetch failed:", err);
+    // -----------------------------
+    // FETCH NOTIFICATIONS
+    // -----------------------------
+    const fetchNotifications = useCallback(async () => {
+      try {
+        const res = await axiosInstance.get("/feeding/notifications/");
+
+        // ✅ FIXED: correct response shape
+        const alerts = res.data?.data?.alerts || [];
+        const count = res.data?.data?.count || 0;
+
+        setNotifications(alerts);
+        setNotificationCount(count);
+      } catch (err) {
+        if (err.name !== "CanceledError") {
+          console.error("Notification fetch failed:", err);
+        }
       }
-    }
-  }, [axiosInstance]);
+    }, [axiosInstance]);
 
   // -----------------------------
   // START FEEDING PLAN
@@ -114,15 +122,16 @@ export const useFeedingData = () => {
     try {
       const res = await axiosInstance.post("/feeding/start/", startData);
       setStatus(res.data);
+      fetchNotifications();
     } catch (err) {
       handleError(err, "Failed to start feeding plan");
     } finally {
       setLoadingAction(false);
     }
-  }, [axiosInstance, startData, handleError]);
+  }, [axiosInstance, startData, handleError, fetchNotifications]);
 
   // -----------------------------
-  // CONFIRM SESSION
+  // CONFIRM SESSION 
   // -----------------------------
   const handleConfirmSession = useCallback(
     async (sessionId) => {
@@ -137,13 +146,14 @@ export const useFeedingData = () => {
         });
 
         await fetchStatus(); // refresh state
+        await fetchNotifications();
       } catch (err) {
         handleError(err, "Failed to confirm feeding session");
       } finally {
         setLoadingAction(false);
       }
     },
-    [axiosInstance, fetchStatus, handleError]
+    [axiosInstance, fetchStatus, fetchNotifications, handleError]
   );
 
   // -----------------------------
@@ -175,17 +185,17 @@ export const useFeedingData = () => {
   // -----------------------------
   useEffect(() => {
     fetchStatus();
-    fetchAlerts();
+    fetchNotifications();
 
     pollingRef.current = setInterval(() => {
-      fetchAlerts();
+      fetchNotifications();
     }, 15000);
 
     return () => {
       abortRef.current?.abort();
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [fetchStatus, fetchAlerts]);
+  }, [fetchStatus, fetchNotifications]);
 
   // -----------------------------
   // PUBLIC API
@@ -193,7 +203,8 @@ export const useFeedingData = () => {
   return {
     // raw state
     status,
-    alerts,
+    notifications,
+    notificationCount,
     error,
 
     // derived
@@ -213,6 +224,7 @@ export const useFeedingData = () => {
     handleStart,
     handleConfirmSession,
     refreshStatus: fetchStatus,
+    refreshNotifications: fetchNotifications,
 
     // helpers
     canConfirm,

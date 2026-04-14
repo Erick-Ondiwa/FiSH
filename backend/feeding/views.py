@@ -6,13 +6,18 @@ from rest_framework import status
 from .services.plan_service import start_feeding_plan
 from .services.status_service import get_feeding_status
 from .services.session_service import  confirm_session
-
+from .services.history_service import get_feeding_history
 
 from .serializers import (
     StartFeedingSerializer,
-    ConfirmSessionSerializer
+    ConfirmSessionSerializer,
+    FeedingHistoryResponseSerializer
 )
 
+from .services.notification_service import (
+    get_all_notifications,
+    mark_all_as_read
+)
 
 # --------------------------------------------------
 # 1. START FEEDING PLAN
@@ -145,3 +150,44 @@ class FeedingAlertsView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class FeedingHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            result = get_feeding_history(request.user)
+
+            if "error" in result:
+                return Response(result, status=status.HTTP_404_NOT_FOUND)
+
+            serializer = FeedingHistoryResponseSerializer(result)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class NotificationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        data = get_all_notifications(request.user)
+        return Response({
+            "success": True,
+            "data": data
+        })
+
+
+class MarkNotificationsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        mark_all_as_read(request.user)
+        return Response({
+            "success": True,
+            "message": "All notifications marked as read"
+        })

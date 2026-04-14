@@ -2,6 +2,10 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 User = settings.AUTH_USER_MODEL
 
 # --------------------------------------------------
@@ -13,7 +17,6 @@ class FeedCategory(models.TextChoices):
     VITAMINS = "vitamins", "Vitamins"
     MINERALS = "minerals", "Minerals"
     OTHER = " other", "Other"
-
 
 # --------------------------------------------------
 # 2. FEED MODEL
@@ -213,82 +216,33 @@ class FeedingAlert(models.Model):
     def __str__(self):
         return f"Alert for {self.user} - Session {self.session.id}"
 
-class FeedingLog(models.Model):
 
-    # -------------------------
-    # RELATIONS
-    # -------------------------
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="feeding_logs"
-    )
-
-    plan = models.ForeignKey(
-        "FeedingPlan",
-        on_delete=models.CASCADE,
-        related_name="logs"
-    )
-
-    feeding_day = models.ForeignKey(
-        "FeedingDay",
-        on_delete=models.CASCADE,
-        related_name="logs"
-    )
-
-    meal = models.OneToOneField(   # ensures ONE log per meal
-        "Feed",
-        on_delete=models.CASCADE,
-        related_name="log"
-    )
-    # -------------------------
-    # STATUS (CRITICAL)
-    # -------------------------
-    STATUS_CHOICES = [
-        ("completed", "Completed"),
-        ("missed", "Missed"),
-        ("skipped", "Skipped"),
+class FeedingNotification(models.Model):
+    NOTIFICATION_TYPES = [
+        ("current", "Current Session"),
+        ("upcoming", "Upcoming Session"),
+        ("missed", "Missed Session"),
+        ("completed", "Completed Session"),
+        ("info", "Info"),
     ]
 
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default="completed"
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    session = models.ForeignKey(
+        FeedingSession,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
     )
 
-    # -------------------------
-    # TIMING
-    # -------------------------
-    scheduled_time = models.DateTimeField()
-    completed_at = models.DateTimeField(null=True, blank=True)
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
 
-    # Delay tracking (important for analytics)
-    delay_minutes = models.IntegerField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
 
-    # -------------------------
-    # FEED SNAPSHOT (IMPORTANT)
-    # -------------------------
-    # Store feeds used at that time (immutability)
-    feeds_used = models.JSONField(default=list)
-
-    # -------------------------
-    # OPTIONAL CONTEXT
-    # -------------------------
-    quantity_kg = models.FloatField(null=True, blank=True)
-    notes = models.TextField(blank=True)
-
-    # -------------------------
-    # SYSTEM FLAGS
-    # -------------------------
-    auto_generated = models.BooleanField(
-        default=False,
-        help_text="True if marked by system (missed detection)"
-    )
-
-    # -------------------------
-    # META
-    # -------------------------
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return f"{self.user} - Day {self.feeding_day.day_number} Meal {self.meal.meal_number} ({self.status})"
+        return f"{self.user} - {self.type}"

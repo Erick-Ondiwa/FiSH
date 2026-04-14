@@ -4,6 +4,9 @@ from .views import (
     FeedingStatusView,
     ConfirmSessionView,
     FeedingAlertsView,
+    FeedingHistoryView,
+    NotificationsView,
+    MarkNotificationsReadView, 
 )
 
 urlpatterns = [
@@ -16,6 +19,8 @@ urlpatterns = [
     # Confirm a specific meal
     path("confirm-session/", ConfirmSessionView.as_view(), name="ession"),
 
-    # Get alerts (due/missed meals)
-    path("alerts/", FeedingAlertsView.as_view(), name="feeding-alerts"),
+    path("history/", FeedingHistoryView.as_view(), name="feeding-history"),
+
+    path("notifications/", NotificationsView.as_view()),
+    path("notifications/mark-read/", MarkNotificationsReadView.as_view()),
 ]
