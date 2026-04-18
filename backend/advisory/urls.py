@@ -43,11 +43,7 @@ urlpatterns = [
         UserOnboardingStatusView.as_view(),
         name="advisory-onboarding-status",
     ),
-
-    # =======================================================
-    # 🔹 SOURCING MODULE (CRITICAL FIX)
-    # =======================================================
-
+    
     # Verified suppliers
     # GET /api/advisory/suppliers/
     path(
@@ -77,6 +73,3 @@ urlpatterns = [
     path("<int:conversation_id>/send/", SendMessageView.as_view()),
 
 ]
-
-
-

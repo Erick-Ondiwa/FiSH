@@ -1,201 +1,139 @@
-from rest_framework import viewsets, permissions, status
+# farm/views.py
+from rest_framework import permissions, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Prefetch
 
-from .models import (
-    FarmUnit,
-    StockingRecord,
-    FeedingLog,
-    WaterQualityLog,
-    GrowthLog,
-    DiseaseIncident,
-)
+from .models import Pond, WaterQuality
+from .serializers import PondSerializer, WaterQualitySerializer
 
-from .serializers import (
-    FarmUnitSerializer,
-    StockingRecordSerializer,
-    FeedingLogSerializer,
-    WaterQualityLogSerializer,
-    GrowthLogSerializer,
-    DiseaseIncidentSerializer,
-    FarmUnitDashboardSerializer,
-)
-
-# -------------------------------------------------------
-# Permissions
-# -------------------------------------------------------
-
-class IsOwner(permissions.BasePermission):
-    """
-    Ensures user only accesses their farm data.
-    """
-
-    def has_object_permission(self, request, view, obj):
-        return obj.owner == request.user
+# =========================================================
+# 🟢 POND: GET (single) + POST
+# =========================================================
+from django.shortcuts import get_object_or_404
 
 
-# -------------------------------------------------------
-# Farm Unit ViewSet
-# -------------------------------------------------------
-
-class FarmUnitViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for farm units (ponds, cages, tanks)
-    """
-
-    serializer_class = FarmUnitSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwner]
-
-    def get_queryset(self):
-        return FarmUnit.objects.filter(owner=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-
-
-# -------------------------------------------------------
-# Stocking ViewSet
-# -------------------------------------------------------
-
-class StockingRecordViewSet(viewsets.ModelViewSet):
-    """
-    Manage stocking records
-    """
-
-    serializer_class = StockingRecordSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return StockingRecord.objects.filter(
-            farm_unit__owner=self.request.user
-        )
-
-# -------------------------------------------------------
-# Feeding Logs
-# -------------------------------------------------------
-
-class FeedingLogViewSet(viewsets.ModelViewSet):
-    """
-    Feeding activity tracking
-    """
-
-    serializer_class = FeedingLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return FeedingLog.objects.filter(
-            farm_unit__owner=self.request.user
-        ).order_by("-feeding_time")
-
-
-# -------------------------------------------------------
-# Water Quality Logs
-# -------------------------------------------------------
-
-class WaterQualityLogViewSet(viewsets.ModelViewSet):
-    """
-    Environmental monitoring
-    """
-
-    serializer_class = WaterQualityLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return WaterQualityLog.objects.filter(
-            farm_unit__owner=self.request.user
-        ).order_by("-recorded_at")
-
-
-# -------------------------------------------------------
-# Growth Logs
-# -------------------------------------------------------
-
-class GrowthLogViewSet(viewsets.ModelViewSet):
-    """
-    Growth monitoring
-    """
-
-    serializer_class = GrowthLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return GrowthLog.objects.filter(
-            farm_unit__owner=self.request.user
-        ).order_by("-recorded_at")
-
-
-# -------------------------------------------------------
-# Disease Incidents
-# -------------------------------------------------------
-
-class DiseaseIncidentViewSet(viewsets.ModelViewSet):
-    """
-    Disease reporting and tracking
-    """
-
-    serializer_class = DiseaseIncidentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return DiseaseIncident.objects.filter(
-            farm_unit__owner=self.request.user
-        ).order_by("-reported_at")
-
-# -------------------------------------------------------
-# Dashboard API (IMPORTANT)
-# -------------------------------------------------------
-
-class FarmDashboardView(APIView):
-    """
-    Returns summarized farm data for dashboard.
-    """
-
+class PondView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        """
+        Get current user's pond (single object)
+        """
+        pond = Pond.objects.filter(owner=request.user).first()
 
-        farm_units = FarmUnit.objects.filter(owner=request.user).prefetch_related(
-            "growth_logs",
-            "water_logs"
+        if not pond:
+            return Response(
+                {"detail": "No pond found. Create one."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = PondSerializer(
+            pond,
+            context={"request": request}
+        )
+        return Response(serializer.data)
+
+    def post(self, request):
+        """
+        Create pond (only one per user)
+        """
+        if hasattr(request.user, "pond"):
+            return Response(
+                {"detail": "Pond already exists. Use update instead."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = PondSerializer(
+            data=request.data,
+            context={"request": request}   # ✅ FIX
         )
 
-        serializer = FarmUnitDashboardSerializer(farm_units, many=True)
+        if serializer.is_valid():
+            serializer.save(owner=request.user)  # ✅ ownership handled here
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response({
-            "farm_units": serializer.data
-        })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# -------------------------------------------------------
-# Alerts API (Optional but Powerful)
-# -------------------------------------------------------
-
-class FarmAlertsView(APIView):
-    """
-    Generates basic alerts (can later integrate AI).
-    """
-
+class PondDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_object(self, request, pk):
+        return get_object_or_404(Pond, id=pk, owner=request.user)
+
+    def get(self, request, pk):
+        pond = self.get_object(request, pk)
+
+        serializer = PondSerializer(
+            pond,
+            context={"request": request} 
+        )
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        pond = self.get_object(request, pk)
+
+        serializer = PondSerializer(
+            pond,
+            data=request.data,
+            partial=True,
+            context={"request": request}   # ✅ FIX
+        )
+
+        if serializer.is_valid():
+            serializer.save()  # owner unchanged
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# =========================================================
+# WATER QUALITY: POST + GET HISTORY
+# =========================================================
+
+class WaterQualityView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_pond(self, request):
+        return Pond.objects.filter(owner=request.user).first()
+
+    # -----------------------------
+    # GET WATER QUALITY HISTORY
+    # -----------------------------
     def get(self, request):
+        pond = self.get_pond(request)
 
-        alerts = []
+        if not pond:
+            return Response(
+                {"detail": "No pond found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        water_logs = WaterQualityLog.objects.filter(
-            farm_unit__owner=request.user
-        ).order_by("-recorded_at")[:10]
+        records = WaterQuality.objects.filter(
+            pond=pond
+        ).order_by("-recorded_at")[:20]
 
-        for log in water_logs:
-            if log.ph < 6.5 or log.ph > 8.5:
-                alerts.append({
-                    "type": "water",
-                    "message": f"Abnormal pH ({log.ph}) in {log.farm_unit.name}"
-                })
+        serializer = WaterQualitySerializer(records, many=True)
+        return Response(serializer.data)
 
-            if log.dissolved_oxygen < 5:
-                alerts.append({
-                    "type": "oxygen",
-                    "message": f"Low oxygen ({log.dissolved_oxygen} mg/L)"
-                })
+    # -----------------------------
+    # CREATE WATER QUALITY RECORD
+    # -----------------------------
+    def post(self, request):
+        pond = self.get_pond(request)
 
-        return Response({"alerts": alerts})
+        if not pond:
+            return Response(
+                {"detail": "Create pond first"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = WaterQualitySerializer(
+            data=request.data,
+            context={"request": request}  # (optional but safe)
+        )
+
+        if serializer.is_valid():
+            serializer.save(pond=pond)  # ✅ single source of truth
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

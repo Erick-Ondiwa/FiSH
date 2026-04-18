@@ -1,234 +1,120 @@
+# farm/models/farm.py
 from django.db import models
-from django.conf import settings
-from django.utils import timezone
+from django.contrib.auth import get_user_model
 
-from core.models import (
-    FishSpecies,
-    FishAgeGroup,
-    FarmingMethod,
-)
+User = get_user_model()
 
-# -------------------------------------------------------
-# Farm Unit (Pond / Cage / Tank)
-# -------------------------------------------------------
-
-class FarmUnit(models.Model):
-    """
-    Represents a physical farming unit:
-    pond, cage, tank, etc.
-    """
-
-    class UnitType(models.TextChoices):
-        POND = "pond", "Pond"
-        CAGE = "cage", "Cage"
-        TANK = "tank", "Tank"
-        OTHER = "other", "Other"
-
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+class Farm(models.Model):
+    owner = models.OneToOneField(
+        User,
         on_delete=models.CASCADE,
-        related_name="farm_units"
+        related_name="farm"
     )
-
-    name = models.CharField(max_length=100)
-
-    unit_type = models.CharField(
-        max_length=20,
-        choices=UnitType.choices
-    )
-
-    farming_method = models.ForeignKey(
-        FarmingMethod,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
-
-    size = models.FloatField(help_text="Size in square meters", null=True, blank=True)
-    depth = models.FloatField(help_text="Depth in meters", null=True, blank=True)
-
-    location_description = models.CharField(max_length=255, blank=True)
-
-    is_active = models.BooleanField(default=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} ({self.unit_type})"
+        return f"{self.owner.username}'s Farm"
+
+class Pond(models.Model):
 
 
-# -------------------------------------------------------
-# Stocking Record
-# -------------------------------------------------------
-
-class StockingRecord(models.Model):
-    """
-    Records stocking events into a farm unit.
-    """
-
-    farm_unit = models.ForeignKey(
-        FarmUnit,
+    owner = models.OneToOneField(
+        User,
         on_delete=models.CASCADE,
-        related_name="stockings"
+        related_name="pond"
     )
 
-    fish_species = models.ForeignKey(
-        FishSpecies,
-        on_delete=models.CASCADE
+    length = models.FloatField()
+    width = models.FloatField()
+    depth = models.FloatField()
+
+    volume = models.FloatField(blank=True, null=True)
+
+    # Fish-related (single species assumption)
+    species = models.CharField(max_length=50)
+    stocking_date = models.DateField()
+
+    # Population
+    initial_count = models.IntegerField()
+    current_count = models.IntegerField()
+
+    # Weight tracking (IMPORTANT)
+    initial_avg_weight = models.FloatField(
+        help_text="Average weight per fish at stocking (grams)"
+    )
+    current_avg_weight = models.FloatField(
+        help_text="Current average weight per fish (grams)"
     )
 
-    age_group = models.ForeignKey(
-        FishAgeGroup,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-compute pond volume
+        self.volume = self.length * self.width * self.depth
+        super().save(*args, **kwargs)
+
+    # -------------------------
+    # Derived Metrics
+    # -------------------------
+
+    @property
+    def biomass(self):
+        """
+        Total biomass (grams)
+        """
+        return self.current_count * self.current_avg_weight
+
+    @property
+    def initial_biomass(self):
+        """
+        Biomass at stocking (grams)
+        """
+        return self.initial_count * self.initial_avg_weight
+
+    @property
+    def weight_gain(self):
+        """
+        Average weight gain per fish (grams)
+        """
+        return self.current_avg_weight - self.initial_avg_weight
+
+    @property
+    def total_weight_gain(self):
+        """
+        Total biomass gain (grams)
+        """
+        return self.biomass - self.initial_biomass
+
+    @property
+    def survival_rate(self):
+        """
+        Percentage survival
+        """
+        if self.initial_count == 0:
+            return 0
+        return (self.current_count / self.initial_count) * 100
+
+    @property
+    def age_days(self):
+        """
+        Dynamic age calculation (no need to store in DB)
+        """
+        from datetime import date
+        return (date.today() - self.stocking_date).days
+
+
+class WaterQuality(models.Model):
+    pond = models.ForeignKey(
+        "Pond",
+        on_delete=models.CASCADE,
+        related_name="water_records"
     )
 
-    quantity = models.PositiveIntegerField()
-    average_weight = models.FloatField(
-        help_text="Initial average weight (grams)",
-        null=True,
-        blank=True
-    )
+    temperature = models.FloatField()
+    ph = models.FloatField()
+    dissolved_oxygen = models.FloatField()
 
-    stocking_date = models.DateField(default=timezone.now)
-
-    source = models.CharField(
-        max_length=255,
-        help_text="Supplier or hatchery",
-        blank=True
-    )
-
-    notes = models.TextField(blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.fish_species.name} - {self.quantity} stocked"
-
-
-# -------------------------------------------------------
-# Feeding Log
-# -------------------------------------------------------
-
-class FeedingLog(models.Model):
-    """
-    Tracks feeding activities per farm unit.
-    """
-
-    farm_unit = models.ForeignKey(
-        FarmUnit,
-        on_delete=models.CASCADE,
-        related_name="feeding_logs"
-    )
-
-    feed_type = models.CharField(max_length=100)
-    quantity = models.FloatField(help_text="Feed amount (kg)")
-
-    feeding_time = models.DateTimeField(default=timezone.now)
-
-    notes = models.TextField(blank=True)
-
-    def __str__(self):
-        return f"{self.feed_type} - {self.quantity}kg"
-
-
-# -------------------------------------------------------
-# Water Quality Log
-# -------------------------------------------------------
-
-class WaterQualityLog(models.Model):
-    """
-    Tracks environmental conditions.
-    Critical for fish survival.
-    """
-
-    farm_unit = models.ForeignKey(
-        FarmUnit,
-        on_delete=models.CASCADE,
-        related_name="water_logs"
-    )
-
-    temperature = models.FloatField(help_text="°C")
-    ph = models.FloatField(help_text="pH level")
-    dissolved_oxygen = models.FloatField(help_text="mg/L")
-
-    turbidity = models.FloatField(null=True, blank=True)
-    ammonia = models.FloatField(null=True, blank=True)
-
-    recorded_at = models.DateTimeField(default=timezone.now)
-
-    notes = models.TextField(blank=True)
-
-    def __str__(self):
-        return f"Water Log ({self.recorded_at.date()})"
-
-
-# -------------------------------------------------------
-# Growth Monitoring
-# -------------------------------------------------------
-
-class GrowthLog(models.Model):
-    """
-    Tracks fish growth over time.
-    Used for prediction (harvest readiness).
-    """
-
-    farm_unit = models.ForeignKey(
-        FarmUnit,
-        on_delete=models.CASCADE,
-        related_name="growth_logs"
-    )
-
-    sample_size = models.PositiveIntegerField(
-        help_text="Number of fish sampled"
-    )
-
-    average_weight = models.FloatField(
-        help_text="Average weight in grams"
-    )
-
-    recorded_at = models.DateField(default=timezone.now)
-
-    notes = models.TextField(blank=True)
-
-    def __str__(self):
-        return f"Growth {self.average_weight}g"
-
-
-# -------------------------------------------------------
-# Disease Incidents
-# -------------------------------------------------------
-
-class DiseaseIncident(models.Model):
-    """
-    Records disease outbreaks or suspected cases.
-    """
-
-    class SeverityLevel(models.TextChoices):
-        LOW = "low", "Low"
-        MEDIUM = "medium", "Medium"
-        HIGH = "high", "High"
-        CRITICAL = "critical", "Critical"
-
-    farm_unit = models.ForeignKey(
-        FarmUnit,
-        on_delete=models.CASCADE,
-        related_name="disease_incidents"
-    )
-
-    disease_name = models.CharField(max_length=255)
-
-    symptoms = models.TextField()
-
-    severity = models.CharField(
-        max_length=20,
-        choices=SeverityLevel.choices
-    )
-
-    action_taken = models.TextField(blank=True)
-
-    reported_at = models.DateTimeField(default=timezone.now)
-
-    resolved = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.disease_name} ({self.severity})"
+        return f"Water Record - {self.pond.owner.username}"

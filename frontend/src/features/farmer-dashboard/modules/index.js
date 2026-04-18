@@ -6,7 +6,14 @@ import FeedingHeader from "../../../components/feeding/FeedingHeader";
 import GrowthPredictionHeader from "./GrowthPredictionHeader";
 import DiseaseDetectionHeader from "./DiseaseDetectionHeader";
 
+import FarmDashboard from "../../../pages/FarmDashboard";
+import FarmConditionsHeader from "../components/layout/FarmConditionsHeader";
+
 export const MODULE_REGISTRY = {
+  "farm-conditions": {
+    Component: FarmDashboard,
+    Header: FarmConditionsHeader,
+  },
   "growth-monitoring": {
     Header: GrowthPredictionHeader,
     Component: GrowthPrediction,

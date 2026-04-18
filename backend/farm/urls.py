@@ -1,55 +1,15 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-
-from .views import (
-    FarmUnitViewSet,
-    StockingRecordViewSet,
-    FeedingLogViewSet,
-    WaterQualityLogViewSet,
-    GrowthLogViewSet,
-    DiseaseIncidentViewSet,
-    FarmDashboardView,
-    FarmAlertsView,
-)
+from django.urls import path
+from .views import PondView, PondDetailView, WaterQualityView
 
 app_name = "farm"
 
-router = DefaultRouter()
-
-# -------------------------------------------------------
-# Core Resources
-# -------------------------------------------------  ------
-router.register(r"units", FarmUnitViewSet, basename="farm-units")
-router.register(r"stocking", StockingRecordViewSet, basename="stocking")
-router.register(r"feeding", FeedingLogViewSet, basename="feeding")
-router.register(r"water", WaterQualityLogViewSet, basename="water")
-router.register(r"growth", GrowthLogViewSet, basename="growth")
-router.register(r"diseases", DiseaseIncidentViewSet, basename="diseases")
-
 urlpatterns = [
+    # LIST + CREATE
+    path("pond/", PondView.as_view(), name="pond"),
 
-    # -------------------------------------------------------
-    # Router Endpoints
-    # -------------------------------------------------------
-    path("", include(router.urls)),
+    # UPDATE (and optionally GET single)
+    path("pond/<int:pk>/", PondDetailView.as_view(), name="pond-detail"),
 
-    # -------------------------------------------------------
-    # Dashboard
-    # GET /api/farm/dashboard/
-    # -------------------------------------------------------
-    path(
-        "dashboard/",
-        FarmDashboardView.as_view(),
-        name="dashboard",
-    ),
-
-    # -------------------------------------------------------
-    # Alerts
-    # GET /api/farm/alerts/
-    # -------------------------------------------------------
-    path(
-        "alerts/",
-        FarmAlertsView.as_view(),
-        name="alerts",
-    ),
+    # WATER QUALITY
+    path("water-quality/", WaterQualityView.as_view(), name="water-quality"),
 ]
