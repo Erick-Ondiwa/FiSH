@@ -1,38 +1,45 @@
 # farm/serializers.py
+
 from rest_framework import serializers
 from .models import Pond, WaterQuality
 
-from .models import Pond
 
-
+# =========================================================
+# 🟢 POND SERIALIZER
+# =========================================================
 class PondSerializer(serializers.ModelSerializer):
     # -----------------------------
-    # DERIVED FIELDS (READ-ONLY)
+    # DERIVED FIELDS (SAFE + EXPLICIT)
     # -----------------------------
-    biomass = serializers.ReadOnlyField()
-    initial_biomass = serializers.ReadOnlyField()
-    weight_gain = serializers.ReadOnlyField()
-    total_weight_gain = serializers.ReadOnlyField()
-    survival_rate = serializers.ReadOnlyField()
-    age_days = serializers.ReadOnlyField()
+    biomass = serializers.SerializerMethodField()
+    initial_biomass = serializers.SerializerMethodField()
+    weight_gain = serializers.SerializerMethodField()
+    total_weight_gain = serializers.SerializerMethodField()
+    survival_rate = serializers.SerializerMethodField()
+    age_days = serializers.SerializerMethodField()
+    stocking_density = serializers.SerializerMethodField()
 
     class Meta:
         model = Pond
         fields = [
             "id",
-            "owner",
+            "owner",  # optional (read-only)
 
+            # Dimensions
             "length",
             "width",
             "depth",
             "volume",
 
+            # Fish info
             "species",
             "stocking_date",
 
+            # Population
             "initial_count",
             "current_count",
 
+            # Weight
             "initial_avg_weight",
             "current_avg_weight",
 
@@ -45,32 +52,53 @@ class PondSerializer(serializers.ModelSerializer):
             "total_weight_gain",
             "survival_rate",
             "age_days",
+            "stocking_density",
         ]
 
-        # ✅ Prevent client from sending these
         read_only_fields = [
             "owner",
             "volume",
             "created_at",
 
-            # Derived always read-only
+            # Always computed
             "biomass",
             "initial_biomass",
             "weight_gain",
             "total_weight_gain",
             "survival_rate",
             "age_days",
+            "stocking_density",
         ]
 
-    # -----------------------------
-    # VALIDATION (Optional but Recommended)
-    # -----------------------------
-    def validate(self, data):
-        """
-        Ensure logical consistency of pond data
-        """
+    # =========================================================
+    # DERIVED FIELD METHODS
+    # =========================================================
+    def get_biomass(self, obj):
+        return obj.biomass
 
-        # Prevent negative or zero dimensions
+    def get_initial_biomass(self, obj):
+        return obj.initial_biomass
+
+    def get_weight_gain(self, obj):
+        return obj.weight_gain
+
+    def get_total_weight_gain(self, obj):
+        return obj.total_weight_gain
+
+    def get_survival_rate(self, obj):
+        return obj.survival_rate
+
+    def get_age_days(self, obj):
+        return obj.age_days
+
+    def get_stocking_density(self, obj):
+        return obj.stocking_density
+
+    # =========================================================
+    # VALIDATION
+    # =========================================================
+    def validate(self, data):
+        # Dimensions must be > 0
         for field in ["length", "width", "depth"]:
             value = data.get(field)
             if value is not None and value <= 0:
@@ -78,7 +106,7 @@ class PondSerializer(serializers.ModelSerializer):
                     {field: "Must be greater than 0."}
                 )
 
-        # Counts must be positive
+        # Counts must be >= 0
         for field in ["initial_count", "current_count"]:
             value = data.get(field)
             if value is not None and value < 0:
@@ -86,7 +114,7 @@ class PondSerializer(serializers.ModelSerializer):
                     {field: "Cannot be negative."}
                 )
 
-        # Weights must be positive
+        # Weights must be > 0
         for field in ["initial_avg_weight", "current_avg_weight"]:
             value = data.get(field)
             if value is not None and value <= 0:
@@ -96,6 +124,10 @@ class PondSerializer(serializers.ModelSerializer):
 
         return data
 
+
+# =========================================================
+# 🌊 WATER QUALITY SERIALIZER
+# =========================================================
 class WaterQualitySerializer(serializers.ModelSerializer):
     class Meta:
         model = WaterQuality
@@ -103,8 +135,4 @@ class WaterQualitySerializer(serializers.ModelSerializer):
         read_only_fields = ["pond", "recorded_at"]
 
     def create(self, validated_data):
-        """
-        DO NOT handle user logic here.
-        Pond is assigned in the view.
-        """
         return super().create(validated_data)

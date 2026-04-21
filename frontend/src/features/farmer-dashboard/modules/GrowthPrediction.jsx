@@ -1,174 +1,215 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import { Activity, TrendingUp } from "lucide-react";
+import { API_URL } from "../../../../api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
-const GrowthPrediction = () => {
-  const [formData, setFormData] = useState({
-    species: "Tilapia",
-    initial_weight: "",
-    days: "",
-    temperature: "",
-    oxygen: "",
-    ph: "",
-    density: "",
-    feeding_rate: "",
-  });
+import { TrendingUp, AlertTriangle, Activity } from "lucide-react";
 
-  const [prediction, setPrediction] = useState(null);
-  const [loading, setLoading] = useState(false);
+const GrowthDashboard = () => {
+  const [data, setData] = useState([]);
+  const [latest, setLatest] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // -----------------------------
+  // FETCH DATA
+  // -----------------------------
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
 
-  const isFormValid = Object.values(formData).every((v) => v !== "");
-
-  const handlePredict = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setPrediction(null);
-
-    try {
-      const payload = {
-        Species: formData.species,
-        initial_weight: parseFloat(formData.initial_weight),
-        days: parseInt(formData.days),
-        temperature: parseFloat(formData.temperature),
-        oxygen: parseFloat(formData.oxygen),
-        ph: parseFloat(formData.ph),
-        density: parseFloat(formData.density),
-        feeding_rate: parseFloat(formData.feeding_rate),
-      };
-
-      const res = await axios.post(
-        "http://localhost:8000/api/ml/predict-growth/",
-        payload,
-        {
+        const res = await axios.get(`${API_URL}/ml/growth-history/`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            Authorization: `Bearer ${token}`,
           },
-        }
-      );
+        });
 
-      setPrediction(res.data.predicted_weight);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+        setData(res.data.data || []);
+        setLatest(res.data.latest || null);
+      } catch (err) {
+        console.error("Failed to fetch growth data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // -----------------------------
+  // INSIGHTS ENGINE
+  // -----------------------------
+  const insights = useMemo(() => {
+    if (!latest) return [];
+
+    const messages = [];
+
+    if (latest.feeding_consistency < 0.5) {
+      messages.push({
+        type: "warning",
+        text: "Low feeding consistency detected. Increase feeding regularity.",
+      });
     }
+
+    if (latest.avg_protein < 25) {
+      messages.push({
+        type: "warning",
+        text: "Protein levels are low. Consider higher protein feeds.",
+      });
+    }
+
+    if (latest.temperature < 24 || latest.temperature > 32) {
+      messages.push({
+        type: "danger",
+        text: "Water temperature is outside optimal range.",
+      });
+    }
+
+    if (messages.length === 0) {
+      messages.push({
+        type: "success",
+        text: "Growth conditions are optimal. Keep it up!",
+      });
+    }
+
+    return messages;
+  }, [latest]);
+
+  // -----------------------------
+  // REUSABLE COMPONENTS (✅ FIXED POSITION)
+  // -----------------------------
+  const MetricCard = ({ icon, label, value }) => (
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+      <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400">
+        {icon}
+      </div>
+
+      <div>
+        <p className="text-xs text-slate-400">{label}</p>
+        <p className="text-white font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+
+  const InsightCard = ({ insight }) => {
+    const styles = {
+      success: "bg-green-500/10 text-green-400 border-green-500/30",
+      warning: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+      danger: "bg-red-500/10 text-red-400 border-red-500/30",
+    };
+
+    return (
+      <div
+        className={`p-4 rounded-lg border text-sm ${styles[insight.type]}`}
+      >
+        {insight.text}
+      </div>
+    );
   };
 
-  // -----------------------
-  // STYLES
-  // -----------------------
-  const input =
-    "w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/40";
+  // -----------------------------
+  // LOADING
+  // -----------------------------
+  if (loading) {
+    return (
+      <div className="text-slate-400 text-sm">
+        Loading growth data...
+      </div>
+    );
+  }
 
-  const label = "text-xs text-slate-400 mb-1 block";
-
+  // -----------------------------
+  // UI
+  // -----------------------------
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="grid lg:grid-cols-12 gap-8">
+    <div className="space-y-8">
 
-        {/* FORM */}
-        <div className="lg:col-span-8 bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-6">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="text-teal-400" />
-            <h2 className="text-lg font-semibold text-white">
-              Growth Prediction
-            </h2>
-          </div>
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-semibold text-white">
+          Growth Monitoring
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">
+          AI-powered fish growth predictions and insights
+        </p>
+      </div>
 
-          <form onSubmit={handlePredict} className="space-y-5">
+      {/* METRICS */}
+      {latest && (
+        <div className="grid md:grid-cols-3 gap-5">
 
-            <div>
-              <label className={label}>Species</label>
-              <select
-                name="species"
-                value={formData.species}
-                onChange={handleChange}
-                className={input}
-              >
-                <option>Tilapia</option>
-                <option>Catfish</option>
-                <option>Trout</option>
-                <option>Nile Perch</option>
-              </select>
-            </div>
+          <MetricCard
+            icon={<TrendingUp size={18} />}
+            label="Predicted Weight"
+            value={`${latest.predicted_weight.toFixed(2)} g`}
+          />
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className={label}>Initial Weight (g)</label>
-                <input name="initial_weight" type="number" onChange={handleChange} className={input} />
-              </div>
+          <MetricCard
+            icon={<Activity size={18} />}
+            label="Feeding Consistency"
+            value={`${(latest.feeding_consistency * 100).toFixed(0)}%`}
+          />
 
-              <div>
-                <label className={label}>Days</label>
-                <input name="days" type="number" onChange={handleChange} className={input} />
-              </div>
-            </div>
+          <MetricCard
+            icon={<AlertTriangle size={18} />}
+            label="Avg Protein"
+            value={`${latest.avg_protein.toFixed(1)}%`}
+          />
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <input name="temperature" placeholder="Temperature °C" onChange={handleChange} className={input} />
-              <input name="ph" placeholder="pH" onChange={handleChange} className={input} />
-              <input name="oxygen" placeholder="Oxygen mg/L" onChange={handleChange} className={input} />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <input name="density" placeholder="Density" onChange={handleChange} className={input} />
-              <input name="feeding_rate" placeholder="Feeding Rate %" onChange={handleChange} className={input} />
-            </div>
-
-            <button
-              disabled={!isFormValid || loading}
-              className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-white rounded-lg font-semibold transition disabled:opacity-40"
-            >
-              {loading ? "Processing..." : "Predict Growth"}
-            </button>
-          </form>
         </div>
+      )}
 
-        {/* RESULT PANEL */}
-        <div className="lg:col-span-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 h-full flex flex-col justify-center items-center text-center">
+      {/* CHART */}
+      <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-5">
+        <h3 className="text-white font-medium mb-4">
+          Growth Trend (Predicted Weight)
+        </h3>
 
-            {prediction ? (
-              <>
-                <p className="text-sm text-slate-400 mb-2">
-                  Predicted Weight
-                </p>
-
-                <h2 className="text-4xl font-bold text-teal-400">
-                  {prediction.toFixed(1)} g
-                </h2>
-
-                <div className="mt-6 w-full text-sm text-slate-400 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Duration</span>
-                    <span>{formData.days} days</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Growth</span>
-                    <span>
-                      +{(prediction - formData.initial_weight).toFixed(1)} g
-                    </span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <Activity size={40} className="text-slate-600 mb-3" />
-                <p className="text-slate-400 text-sm">
-                  Enter parameters to generate prediction
-                </p>
-              </>
-            )}
-
+        {data.length === 0 ? (
+          <p className="text-slate-400 text-sm">
+            No growth data available yet.
+          </p>
+        ) : (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="predicted_weight"
+                  stroke="#14b8a6"
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* INSIGHTS */}
+      <div className="space-y-3">
+        <h3 className="text-white font-medium">
+          Recommendations
+        </h3>
+
+        {insights.map((insight, i) => (
+          <InsightCard key={i} insight={insight} />
+        ))}
       </div>
     </div>
   );
 };
 
-export default GrowthPrediction;
+export default GrowthDashboard;

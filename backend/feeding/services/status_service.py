@@ -19,19 +19,22 @@ def get_feeding_status(user):
     if not feeding_day:
         feeding_day = plan.days.create(
             day_number=1,
-            date=timezone.now().date()
+            date=timezone.localtime(timezone.now()).date()
         )
         create_sessions_for_day(plan, feeding_day)
 
     sessions = list(feeding_day.sessions.order_by("session_number"))
-    now = timezone.now()
+
+    # ✅ Normalize current time to localtime
+    now = timezone.localtime(timezone.now())
 
     # ==================================================
     # 1. AUTO-MARK MISSED SESSIONS
     # ==================================================
     for s in sessions:
         if s.status == "pending":
-            if now > s.scheduled_time + timedelta(hours=1):
+            scheduled = timezone.localtime(s.scheduled_time)
+            if now > scheduled + timedelta(hours=1):
                 s.status = "missed"
                 s.save(update_fields=["status"])
 
@@ -46,7 +49,7 @@ def get_feeding_status(user):
     current = None
 
     for s in pending_sessions:
-        start = s.scheduled_time
+        start = timezone.localtime(s.scheduled_time)
         end = start + timedelta(hours=1)
 
         if start <= now <= end:
@@ -87,7 +90,7 @@ def get_feeding_status(user):
     if all(s.status in ["completed", "missed"] for s in sessions):
         new_day = plan.days.create(
             day_number=feeding_day.day_number + 1,
-            date=timezone.now().date()
+            date=timezone.localtime(timezone.now()).date()
         )
         create_sessions_for_day(plan, new_day)
         return get_feeding_status(user)
@@ -104,7 +107,7 @@ def get_feeding_status(user):
         # CONFIRM LOGIC (STRICT 1-HOUR WINDOW)
         can_confirm = False
         if is_current and s.status == "pending":
-            start = s.scheduled_time
+            start = timezone.localtime(s.scheduled_time)
             end = start + timedelta(hours=1)
             can_confirm = start <= now <= end
 
@@ -115,7 +118,7 @@ def get_feeding_status(user):
             feeds = [f.name for f in s.feeds.all()]
         else:
             feeds = []
- 
+
         session_list.append({
             "id": s.id,
             "session": s.session_number,
