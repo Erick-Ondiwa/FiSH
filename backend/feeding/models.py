@@ -6,8 +6,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-User = settings.AUTH_USER_MODEL
-
 # --------------------------------------------------
 # 1. FEED CATEGORY (FOR BALANCED DIETS)
 # --------------------------------------------------
@@ -105,6 +103,13 @@ class FeedingPlan(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name="feeding_plans"
+    )
+    pond = models.ForeignKey(
+        "farm.Pond",
+        on_delete=models.CASCADE,
+        related_name="feeding_plans",
+        null=True,
+        blank=True
     )
 
     species = models.CharField(max_length=50)
