@@ -31,16 +31,13 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
   }, []);
 
   // -------------------------
-  // TOGGLE MULTI SPECIES ✅ FIXED
+  // Select Species ✅ FIXED
   // -------------------------
-  const toggleSpecies = (id) => {
-    const current = formData.fish_species || [];
-
-    const next = current.includes(id)
-      ? current.filter((x) => x !== id)
-      : [...current, id];
-
-    setFormData({ ...formData, fish_species: next });
+  const selectSpecies = (id) => {
+    setFormData({
+      ...formData,
+      fish_species: id,
+    });
   };
 
   // -------------------------
@@ -107,21 +104,19 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
             </p>
           )}
         </div>
-
-        {/* SPECIES (MULTI-SELECT) */}
+        {/* SPECIES (SINGLE SELECT) */}
         <div className={section}>
           <label className={label}>Fish Species</label>
 
           <div className="flex flex-wrap gap-2">
             {speciesList.map((species) => {
-              const active =
-                (formData.fish_species || []).includes(species.id);
+              const active = formData.fish_species === species.id;
 
               return (
                 <button
                   key={species.id}
                   type="button"
-                  onClick={() => toggleSpecies(species.id)}
+                  onClick={() => selectSpecies(species.id)}
                   className={`${pillBase} ${
                     active ? activePill : inactivePill
                   }`}
@@ -134,7 +129,7 @@ const StepFarmingDetails = ({ formData, setFormData, errors }) => {
           </div>
 
           <p className="text-xs text-slate-500">
-            Select one or more species.
+            Select one species.
           </p>
 
           {errors.fish_species && (

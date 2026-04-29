@@ -10,20 +10,19 @@ class GrowthPredictionSerializer(serializers.Serializer):
     initial_weight = serializers.FloatField()
     days = serializers.IntegerField()
 
-class DiseasePredictionSerializer(serializers.Serializer):
-    species = serializers.CharField()
-    age_group = serializers.CharField()
 
+class DiseasePredictionSerializer(serializers.Serializer):
     symptoms = serializers.ListField(
         child=serializers.CharField(),
-        allow_empty=True
+        allow_empty=False
     )
 
-    temperature = serializers.FloatField()
-    ph = serializers.FloatField()
-    oxygen = serializers.FloatField()
-    stocking_density = serializers.FloatField()
-    water_source = serializers.CharField()
+    recent_deaths = serializers.BooleanField(required=False, default=False)
 
-    recent_deaths = serializers.IntegerField()  # 0 or 1
-    death_rate = serializers.FloatField()
+    death_rate = serializers.FloatField(required=False, default=0.0)
+
+    # Optional validation
+    def validate_death_rate(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Death rate cannot be negative.")
+        return value

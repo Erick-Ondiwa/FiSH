@@ -2,10 +2,10 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Cloud, BarChart3, Bot, ShoppingCart, Users } from "lucide-react";
 
-import Header from "../components/Header";
-import Hero from "../sections/Hero";
-import Features from "../components/Features";
-import Footer from "../components/Footer";
+import Header from "../components/landingPage/Header";
+import Hero from "../components/landingPage/Hero";
+import Features from "../components/landingPage/Features";
+import Footer from "../components/landingPage/Footer";
 
 const LandingPage = () => {
   return (

@@ -11,7 +11,7 @@ urlpatterns = [
     path('api/ml/', include('ML.urls')),
     path('api/feeding/', include('feeding.urls')),
     path('api/farm/', include('farm.urls')),
-
+    path("api/notifications/", include("notifications.urls")),
 ]
 
 if settings.DEBUG:

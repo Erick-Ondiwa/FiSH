@@ -1,14 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import DashboardLayout from "./features/farmer-dashboard/components/layout/DashboardLayout";
-import ChatPage from "./features/farmer-dashboard/components/layout/ChatPage";
+import DashboardLayout from "./pages/DashboardLayout";
+import ContinueSetupPage from "./pages/ContinueSetup";
+import LoginModal from "./components/auth/LoginModal";
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="" element={<LandingPage />} />
-        <Route path="/fish/aspiring-farmer" element={<DashboardLayout />} />
-        <Route path="/chat/:conversationId" element={<ChatPage />} />
+        <Route path="/dashboard" element={<DashboardLayout />} />
+        <Route path="/login" element={<ContinueSetupPage />} />
       </Routes>
     </Router>
   );

@@ -69,6 +69,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     "django_filters",
     'corsheaders',
+    'channels',
+    
     # Created Apps
     "core.apps.CoreConfig",
     "accounts.apps.AccountsConfig",
@@ -76,6 +78,7 @@ INSTALLED_APPS = [
     "ML",
     "feeding.apps.FeedingConfig",
     "farm.apps.FarmConfig",
+    "notifications.apps.NotificationsConfig",
 ]
 
 REST_FRAMEWORK = {
@@ -142,6 +145,21 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "CONFIG": "channels.layers.InMemoryChannelLayer",
+#         # For production → use Redis
+#     }
+# }
 
 WSGI_APPLICATION = 'config.wsgi.application'
 

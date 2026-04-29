@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
+from .models import FeedingHistory
+
 from .services.plan_service import start_feeding_plan
 from .services.status_service import get_feeding_status
-from .services.session_service import  confirm_session
-from .services.history_service import get_feeding_history
+from .services.session_service import confirm_session
+from .services.feeding_response import build_feeding_response
 
 from .serializers import (
     StartFeedingSerializer,
@@ -14,10 +16,6 @@ from .serializers import (
     FeedingHistoryResponseSerializer
 )
 
-from .services.notification_service import (
-    get_all_notifications,
-    mark_all_as_read
-)
 
 # --------------------------------------------------
 # 1. START FEEDING PLAN
@@ -29,52 +27,68 @@ class StartFeedingPlanView(APIView):
     def post(self, request):
         serializer = StartFeedingSerializer(data=request.data)
 
-        if serializer.is_valid():
-            try:
-                result = start_feeding_plan(
-                    user=request.user,
-                    species=serializer.validated_data["species"],
-                    age_group=serializer.validated_data["age_group"],
-                )
+        if not serializer.is_valid():
+            return Response(
+                {"success": False, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-                if "error" in result:
-                    return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = start_feeding_plan(
+                user=request.user,
+                species=serializer.validated_data["species"],
+                age_group=serializer.validated_data["age_group"],
+            )
 
-                return Response(result, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
+            if "error" in result:
                 return Response(
-                    {"error": str(e)},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"success": False, "message": result["error"]},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"success": True, "data": result},
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # --------------------------------------------------
 # 2. GET FEEDING STATUS
 # --------------------------------------------------
+
 class FeedingStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
-            result = get_feeding_status(request.user)
+            data, error = get_feeding_status(request.user)
 
-            if "error" in result:
-                return Response(result, status=status.HTTP_404_NOT_FOUND)
+            if error:
+                return Response(
+                    {"success": False, "message": error},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            response = build_feeding_response(data)
 
             return Response(
-                {
-                    "success": True,
-                    "data": result
-                },
+                {"success": True, "data": response},
                 status=status.HTTP_200_OK
             )
 
         except Exception as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "success": False,
+                    "message": str(e),
+                    "type": e.__class__.__name__,
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -82,6 +96,7 @@ class FeedingStatusView(APIView):
 # --------------------------------------------------
 # 3. CONFIRM SESSION
 # --------------------------------------------------
+
 class ConfirmSessionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -100,13 +115,22 @@ class ConfirmSessionView(APIView):
                 session_id=serializer.validated_data["session_id"]
             )
 
-            updated_status = get_feeding_status(request.user)
+            # Re-fetch updated status
+            data, error = get_feeding_status(request.user)
+
+            if error:
+                return Response(
+                    {"success": False, "message": error},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            response = build_feeding_response(data)
 
             return Response(
                 {
                     "success": True,
-                    "message": result["message"],
-                    "data": updated_status
+                    "message": result.get("message", "Session confirmed"),
+                    "data": response
                 },
                 status=status.HTTP_200_OK
             )
@@ -119,75 +143,41 @@ class ConfirmSessionView(APIView):
 
         except Exception as e:
             return Response(
-                {"success": False, "message": "Internal server error"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-# --------------------------------------------------
-# 4. GET FEEDING ALERTS
-# --------------------------------------------------
-class FeedingAlertsView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            alerts = get_due_sessions(request.user)
-
-            return Response(
                 {
-                    "success": True,
-                    "data": {
-                        "alerts": alerts,
-                        "count": len(alerts)
-                    }
+                    "success": False,
+                    "message": str(e),
+                    "type": e.__class__.__name__,
                 },
-                status=status.HTTP_200_OK
-            )
-
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
+
+# --------------------------------------------------
+# 4. FEEDING HISTORY
+# --------------------------------------------------
+
 class FeedingHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
-            result = get_feeding_history(request.user)
+            history = FeedingHistory.objects.filter(
+                user=request.user
+            ).order_by("-fed_at")[:50]
 
-            if "error" in result:
-                return Response(result, status=status.HTTP_404_NOT_FOUND)
+            serializer = FeedingHistoryResponseSerializer(history, many=True)
 
-            serializer = FeedingHistoryResponseSerializer(result)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(
+                {"success": True, "data": serializer.data},
+                status=status.HTTP_200_OK
+            )
 
         except Exception as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "success": False,
+                    "message": str(e),
+                    "type": e.__class__.__name__,
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
-class NotificationsView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        data = get_all_notifications(request.user)
-        return Response({
-            "success": True,
-            "data": data
-        })
-
-
-class MarkNotificationsReadView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        mark_all_as_read(request.user)
-        return Response({
-            "success": True,
-            "message": "All notifications marked as read"
-        })

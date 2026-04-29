@@ -3,10 +3,9 @@ from .views import (
     StartFeedingPlanView,
     FeedingStatusView,
     ConfirmSessionView,
-    FeedingAlertsView,
     FeedingHistoryView,
-    NotificationsView,
-    MarkNotificationsReadView, 
+    # NotificationsView,
+    # MarkNotificationsReadView, 
 )
 
 urlpatterns = [
@@ -21,6 +20,6 @@ urlpatterns = [
 
     path("history/", FeedingHistoryView.as_view(), name="feeding-history"),
 
-    path("notifications/", NotificationsView.as_view()),
-    path("notifications/mark-read/", MarkNotificationsReadView.as_view()),
+#     path("notifications/", NotificationsView.as_view()),
+#     path("notifications/mark-read/", MarkNotificationsReadView.as_view()),
 ]

@@ -11,7 +11,7 @@ const ReviewRow = ({ label, value }) => (
   </div>
 );
 
-const StepReview = ({ formData }) => {
+const StepReview = ({ formData, onComplete, submitting }) => {
   const [lookups, setLookups] = useState({
     counties: [],
     subcounties: [],
@@ -57,6 +57,11 @@ const StepReview = ({ formData }) => {
     fetchLookups();
   }, []);
 
+  const handleComplete = () => {
+    if (!confirmed) return;
+    onComplete(); // triggers Step 4 API
+  };
+
   // -------------------------
   // HELPERS
   // -------------------------
@@ -64,16 +69,14 @@ const StepReview = ({ formData }) => {
     list.find((item) => item.id === id)?.name || "—";
 
   // ✅ FIXED MULTI-SPECIES DISPLAY
-  const resolveSpeciesNames = () => {
-    if (!formData.fish_species?.length) return "—";
+  const resolveSpeciesName = () => {
+    if (!formData.fish_species) return "—";
 
-    return formData.fish_species
-      .map(
-        (id) =>
-          lookups.species.find((s) => s.id === id)?.name
-      )
-      .filter(Boolean)
-      .join(", ");
+    return (
+      lookups.species.find(
+        (s) => s.id === formData.fish_species
+      )?.name || "—"
+    );
   };
 
   return (
@@ -121,7 +124,7 @@ const StepReview = ({ formData }) => {
 
           <ReviewRow
             label="Fish Species"
-            value={resolveSpeciesNames()}
+            value={resolveSpeciesName()}
           />
 
           <ReviewRow

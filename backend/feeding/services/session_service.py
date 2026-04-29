@@ -5,6 +5,9 @@ from django.db import transaction
 from ..models import FeedingSession
 from .feed_selector import get_balanced_feeds
 
+from notifications.services.notification_service import create_notification
+from .history_service import log_feeding_history
+
 def create_sessions_for_day(plan, feeding_day):
     if feeding_day.sessions.exists():
         return
@@ -13,32 +16,29 @@ def create_sessions_for_day(plan, feeding_day):
         datetime.combine(feeding_day.date, plan.start_time)
     )
 
-    sessions = []
-
     for i in range(plan.meals_per_day):
         scheduled_time = base_datetime + timedelta(
             hours=i * plan.feeding_interval_hours
         )
 
-        sessions.append(FeedingSession(
+        session = FeedingSession.objects.create(
             feeding_day=feeding_day,
             session_number=i + 1,
             scheduled_time=scheduled_time,
             status="pending"
-        ))
-        
-    created_sessions = FeedingSession.objects.bulk_create(sessions)
+        )
 
-    for i, session in enumerate(created_sessions):
-        feeds = get_balanced_feeds(plan.species, plan.age_group, i + 1)
+        feeds = get_balanced_feeds(
+            plan.species,
+            plan.age_group,
+            i + 1
+        )
+
         session.feeds.set(feeds)
-
 
 @transaction.atomic
 def confirm_session(user, session_id):
     from .day_service import advance_day
-    from datetime import timedelta
-
     session = FeedingSession.objects.select_related(
         "feeding_day__plan"
     ).get(id=session_id)
@@ -67,10 +67,34 @@ def confirm_session(user, session_id):
     if previous_sessions.exclude(status__in=["completed", "missed"]).exists():
         raise ValueError("Previous session still pending")
 
+    # ----------------------------------------
+    # ✅ MARK COMPLETED
+    # ----------------------------------------
     session.status = "completed"
     session.confirmed_at = now
     session.save(update_fields=["status", "confirmed_at"])
 
+    # ----------------------------------------
+    # 🔔 NOTIFICATION
+    # ----------------------------------------
+    create_notification(
+        user=user,
+        type="feeding_completed",
+        title="Feeding Confirmed",
+        message=f"Session {session.session_number} completed successfully.",
+    )
+
+    # ----------------------------------------
+    # 📊 HISTORY LOG
+    # ----------------------------------------
+    log_feeding_history(
+        session=session,
+        status="completed",
+        actual_time=now
+    )
+    # ----------------------------------------
+    # ➡️ ADVANCE DAY IF DONE
+    # ----------------------------------------
     if not session.feeding_day.sessions.exclude(
         status__in=["completed", "missed"]
     ).exists():
