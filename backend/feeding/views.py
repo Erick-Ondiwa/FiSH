@@ -9,6 +9,7 @@ from .services.plan_service import start_feeding_plan
 from .services.status_service import get_feeding_status
 from .services.session_service import confirm_session
 from .services.feeding_response import build_feeding_response
+from .services.history_service import build_history_response
 
 from .serializers import (
     StartFeedingSerializer,
@@ -161,14 +162,36 @@ class FeedingHistoryView(APIView):
 
     def get(self, request):
         try:
-            history = FeedingHistory.objects.filter(
-                user=request.user
-            ).order_by("-fed_at")[:50]
 
-            serializer = FeedingHistoryResponseSerializer(history, many=True)
+            # ----------------------------------------
+            # FETCH HISTORY
+            # ----------------------------------------
+
+            history = list(
+                FeedingHistory.objects.filter(
+                    user=request.user
+                ).prefetch_related(
+                    "feeds"
+                ).order_by(
+                    "-scheduled_time"
+                )[:50]
+            )
+
+            # ----------------------------------------
+            # BUILD STRUCTURED RESPONSE
+            # ----------------------------------------
+            response_data = build_history_response(history)
+
+            # ----------------------------------------
+            # SERIALIZE STRUCTURED DATA
+            # ----------------------------------------
+            serializer = FeedingHistoryResponseSerializer(response_data)
 
             return Response(
-                {"success": True, "data": serializer.data},
+                {
+                    "success": True,
+                    "data": serializer.data
+                },
                 status=status.HTTP_200_OK
             )
 

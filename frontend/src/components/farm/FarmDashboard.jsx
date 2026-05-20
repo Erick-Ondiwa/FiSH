@@ -61,34 +61,50 @@ const FarmDashboard = () => {
     fetchWater();
   }, []);
 
-  
-
   // ---------------- SAVE POND
-  const handleSavePond = async (pondData) => {
-    setSaving(true);
-    try {
-      let res;
+const handleSavePond = async (pondData) => {
+  setSaving(true);
 
-      if (pond) {
-        res = await axios.put(
-          `${API_URL}/farm/pond/${pond.id}/`,
-          pondData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else {
-        res = await axios.post(`${API_URL}/farm/pond/`, pondData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
+  try {
+    let res;
 
-      setPond(res.data);
-      setShowPondForm(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
+    if (pond) {
+      res = await axios.put(
+        `${API_URL}/farm/pond/${pond.id}/`,
+        pondData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } else {
+      res = await axios.post(
+        `${API_URL}/farm/pond/`,
+        pondData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
     }
-  };
+
+    // Update pond state
+    setPond(res.data);
+
+    // Close pond form
+    setShowPondForm(false);
+
+    // Automatically open water quality form
+    setShowWaterForm(true);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setSaving(false);
+  }
+};
 
   // ---------------- SAVE WATER
   const handleSaveWater = async (data) => {

@@ -200,6 +200,7 @@ class FeedingSession(models.Model):
 
 
 class FeedingHistory(models.Model):
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -219,17 +220,56 @@ class FeedingHistory(models.Model):
         blank=True
     )
 
-    # 📊 Execution Data
+    # ✅ Snapshot Data
+    day_number = models.IntegerField(default=1)
+
+    session_number = models.IntegerField(default=1)
+
+    scheduled_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    actual_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("completed", "Completed"),
+            ("missed", "Missed"),
+        ],
+        default="completed"
+    )
+
     fed_at = models.DateTimeField(auto_now_add=True)
-    quantity_kg = models.FloatField(null=True, blank=True)
 
-    # Feed composition
-    feeds = models.ManyToManyField("feeding.Feed", blank=True)
+    quantity_kg = models.FloatField(
+        null=True,
+        blank=True
+    )
 
-    # 📈 Context snapshot (important for ML later)
-    water_temperature = models.FloatField(null=True, blank=True)
-    oxygen = models.FloatField(null=True, blank=True)
-    ph = models.FloatField(null=True, blank=True)
+    feeds = models.ManyToManyField(
+        "feeding.Feed",
+        blank=True
+    )
+
+    water_temperature = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    oxygen = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    ph = models.FloatField(
+        null=True,
+        blank=True
+    )
 
     notes = models.TextField(blank=True)
 

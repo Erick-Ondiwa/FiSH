@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: fish-backend
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "daphne -b 0.0.0.0 -p $PORT config.asgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
