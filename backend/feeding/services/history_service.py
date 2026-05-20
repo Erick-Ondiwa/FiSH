@@ -1,63 +1,98 @@
-from django.utils import timezone
-from ..models import FeedingPlan
+# feeding/services/history_service.py
+
+from ..models import FeedingHistory
 
 
-def get_feeding_history(user):
-    plan = FeedingPlan.objects.filter(user=user, is_active=True).first()
+def log_feeding_history(session, status, actual_time=None):
 
-    if not plan:
-        return {"error": "No active feeding plan"}
+    history = FeedingHistory.objects.create(
+        user=session.feeding_day.plan.user,
 
-    days = plan.days.prefetch_related("sessions__feeds").order_by("-day_number")
+        plan=session.feeding_day.plan,
 
-    history_days = []
-    total_sessions = 0
-    total_completed = 0
+        session=session,
 
-    for day in days:
-        sessions_data = []
+        day_number=session.feeding_day.day_number,
 
-        completed = 0
-        missed = 0
+        session_number=session.session_number,
 
-        for s in day.sessions.all().order_by("session_number"):
-            session_info = {
-                "id": s.id,
-                "session": s.session_number,
-                "time": s.scheduled_time.strftime("%H:%M"),
-                "status": s.status,
-                "feeds": [f.name for f in s.feeds.all()] if s.status == "completed" else []
+        scheduled_time=session.scheduled_time,
+
+        actual_time=actual_time,
+
+        status=status,
+    )
+
+    # ✅ Many-to-many assignment
+    history.feeds.set(session.feeds.all())
+
+    return history
+
+def build_history_response(history_records):
+
+    days = []
+
+    # group by day_number
+    grouped = {}
+
+    for record in history_records:
+
+        day = record.day_number
+
+        if day not in grouped:
+            grouped[day] = {
+                "day": day,
+                "date": record.scheduled_time.date(),
+                "sessions": [],
             }
 
-            sessions_data.append(session_info)
-
-            total_sessions += 1
-
-            if s.status == "completed":
-                completed += 1
-                total_completed += 1
-            elif s.status == "missed":
-                missed += 1
-
-        history_days.append({
-            "day": day.day_number,
-            "date": day.date,
-            "sessions": sessions_data,
-            "summary": {
-                "completed": completed,
-                "missed": missed,
-                "total": len(sessions_data),
-                "completion_rate": int((completed / len(sessions_data)) * 100) if sessions_data else 0
-            }
+        grouped[day]["sessions"].append({
+            "id": record.id,
+            "session": record.session_number,
+            "time": record.scheduled_time.strftime("%Y-%m-%d %H:%M"),
+            "status": record.status,
+            "feeds": [f.name for f in record.feeds.all()]
         })
 
-    overall_rate = int((total_completed / total_sessions) * 100) if total_sessions else 0
+    # summaries
+    for day_data in grouped.values():
+
+        sessions = day_data["sessions"]
+
+        completed = len([
+            s for s in sessions if s["status"] == "completed"
+        ])
+
+        total = len(sessions)
+
+        missed = len([
+            s for s in sessions if s["status"] == "missed"
+        ])
+
+        day_data["summary"] = {
+            "completed": completed,
+            "missed": missed,
+            "total": total,
+            "completion_rate": int((completed / total) * 100) if total else 0
+        }
+
+        days.append(day_data)
+
+    total_sessions = len(history_records)
+    completed_sessions = len([
+        h for h in history_records
+        if h.status == "completed"
+    ])
+
+    overall = {
+        "total_sessions": total_sessions,
+        "completed_sessions": completed_sessions,
+        "completion_rate": int(
+            (completed_sessions / total_sessions) * 100
+        ) if total_sessions else 0
+    }
 
     return {
-        "days": history_days,
-        "overall": {
-            "total_sessions": total_sessions,
-            "completed_sessions": total_completed,
-            "completion_rate": overall_rate
-        }
+        "days": days,
+        "overall": overall
     }

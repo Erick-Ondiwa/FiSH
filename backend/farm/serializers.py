@@ -33,6 +33,7 @@ class PondSerializer(serializers.ModelSerializer):
 
             # Fish info
             "species",
+            "age_group",
             "stocking_date",
 
             # Population

@@ -199,55 +199,78 @@ class FeedingSession(models.Model):
         return f"{self.feeding_day} - Meal {self.session_number} ({self.status})"
 
 
-# --------------------------------------------------
-# 6. FEEDING ALERT (FOR NOTIFICATIONS)
-# --------------------------------------------------
-class FeedingAlert(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class FeedingHistory(models.Model):
 
-    session = models.ForeignKey(
-        FeedingSession,
+    user = models.ForeignKey(
+        User,
         on_delete=models.CASCADE,
-        related_name="alerts"
+        related_name="feeding_history"
     )
 
-    message = models.TextField()
-
-    is_sent = models.BooleanField(default=False)
-
-    scheduled_time = models.DateTimeField()
-    sent_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"Alert for {self.user} - Session {self.session.id}"
-
-
-class FeedingNotification(models.Model):
-    NOTIFICATION_TYPES = [
-        ("current", "Current Session"),
-        ("upcoming", "Upcoming Session"),
-        ("missed", "Missed Session"),
-        ("completed", "Completed Session"),
-        ("info", "Info"),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    session = models.ForeignKey(
-        FeedingSession,
+    plan = models.ForeignKey(
+        "feeding.FeedingPlan",
         on_delete=models.CASCADE,
+        related_name="history"
+    )
+
+    session = models.ForeignKey(
+        "feeding.FeedingSession",
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
 
-    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
-    message = models.TextField()
+    # ✅ Snapshot Data
+    day_number = models.IntegerField(default=1)
 
-    is_read = models.BooleanField(default=False)
+    session_number = models.IntegerField(default=1)
+
+    scheduled_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    actual_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("completed", "Completed"),
+            ("missed", "Missed"),
+        ],
+        default="completed"
+    )
+
+    fed_at = models.DateTimeField(auto_now_add=True)
+
+    quantity_kg = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    feeds = models.ManyToManyField(
+        "feeding.Feed",
+        blank=True
+    )
+
+    water_temperature = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    oxygen = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    ph = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    notes = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.user} - {self.type}"

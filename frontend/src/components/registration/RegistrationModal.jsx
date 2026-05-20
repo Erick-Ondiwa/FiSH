@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
-import ProgressBar from "../ui/ProgressBar";
+import ProgressBar from "./ProgressBar";
 import StepPersonalDetails from "./StepPersonalDetails";
 import StepLocationDetails from "./StepLocationDetails";
 import StepFarmingDetails from "./StepFarmingDetails";
 import StepReview from "./StepReview";
 
-import { useRegistration } from "./hooks/useRegistration";
+import { useRegistration } from "../../hooks/useRegistration";
 
 const TOTAL_STEPS = 4;
 

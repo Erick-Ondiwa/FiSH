@@ -2,17 +2,15 @@ from django.utils import timezone
 from datetime import timedelta
 from ..models import FeedingPlan
 from .session_service import create_sessions_for_day
-
-
-def format_datetime(dt):
-    return timezone.localtime(dt).strftime("%Y-%m-%d %H:%M")
+from notifications.services.notification_service import create_notification
+from feeding.services.history_service import log_feeding_history
 
 
 def get_feeding_status(user):
     plan = FeedingPlan.objects.filter(user=user, is_active=True).first()
 
     if not plan:
-        return {"error": "No active plan"}
+        return None, "No active plan"
 
     feeding_day = plan.days.order_by("-day_number").first()
 
@@ -24,69 +22,75 @@ def get_feeding_status(user):
         create_sessions_for_day(plan, feeding_day)
 
     sessions = list(feeding_day.sessions.order_by("session_number"))
-
-    # ✅ Normalize current time to localtime
     now = timezone.localtime(timezone.now())
 
-    # ==================================================
-    # 1. AUTO-MARK MISSED SESSIONS
-    # ==================================================
+    # ----------------------------------------
+    # 1. AUTO-MARK MISSED
+    # ----------------------------------------
     for s in sessions:
         if s.status == "pending":
-            scheduled = timezone.localtime(s.scheduled_time)
-            if now > scheduled + timedelta(hours=1):
+            if now > timezone.localtime(s.scheduled_time) + timedelta(hours=0.5):
                 s.status = "missed"
                 s.save(update_fields=["status"])
 
-    # ==================================================
-    # 2. BUILD PENDING LIST (SOURCE OF TRUTH)
-    # ==================================================
-    pending_sessions = [s for s in sessions if s.status == "pending"]
+                create_notification(
+                    user=plan.user,
+                    type="feeding_missed",
+                    title="Missed Feeding Session",
+                    message=f"Session {s.session_number} was missed.",
+                )
 
-    # ==================================================
-    # 3. DETERMINE CURRENT SESSION (STRICT WINDOW FIRST)
-    # ==================================================
+                log_feeding_history(session=s, status="missed")
+
+    # ----------------------------------------
+    # 2. PENDING SESSIONS
+    # ----------------------------------------
+    pending = [s for s in sessions if s.status == "pending"]
+
+    # ----------------------------------------
+    # 3. CURRENT SESSION
+    # ----------------------------------------
     current = None
-
-    for s in pending_sessions:
+    for s in pending:
         start = timezone.localtime(s.scheduled_time)
         end = start + timedelta(hours=1)
-
         if start <= now <= end:
             current = s
             break
+    
+    if not current and pending:
+        current = min(pending, key=lambda s: s.scheduled_time)
 
-    # FALLBACK: if no active window session, pick first pending
-    if not current and pending_sessions:
-        current = pending_sessions[0]
+    # if not current and pending:
+    #     current = pending[0]
 
-    # ==================================================
-    # 4. DETERMINE UPCOMING SESSION (ALWAYS NEXT ONE)
-    # ==================================================
+    # ----------------------------------------
+    # 4. UPCOMING SESSION
+    # ----------------------------------------
     upcoming = None
 
-    if current:
-        found = False
+    if pending:
+        # If current exists, exclude it
+        remaining = [s for s in pending if not current or s.id != current.id]
 
-        for s in sessions:
-            if s.id == current.id:
-                found = True
-                continue
+        # Get next by time
+        if remaining:
+            upcoming = min(remaining, key=lambda s: s.scheduled_time)
 
-            if found and s.status == "pending":
-                upcoming = s
-                break
+    # upcoming = None
+    # if current:
+    #     found = False
+    #     for s in sessions:
+    #         if s.id == current.id:
+    #             found = True
+    #             continue
+    #         if found and s.status == "pending":
+    #             upcoming = s
+    #             break
 
-    # fallback: if no upcoming found, pick next available session
-    if not upcoming:
-        for s in sessions:
-            if s.status == "pending" and (not current or s.id != current.id):
-                upcoming = s
-                break
-
-    # ==================================================
-    # 5. HANDLE DAY COMPLETION
-    # ==================================================
+    # ----------------------------------------
+    # 5. DAY COMPLETE
+    # ----------------------------------------
     if all(s.status in ["completed", "missed"] for s in sessions):
         new_day = plan.days.create(
             day_number=feeding_day.day_number + 1,
@@ -95,61 +99,19 @@ def get_feeding_status(user):
         create_sessions_for_day(plan, new_day)
         return get_feeding_status(user)
 
-    # ==================================================
-    # 6. BUILD RESPONSE
-    # ==================================================
-    session_list = []
-
-    for s in sessions:
-        is_current = current and s.id == current.id
-        is_upcoming = upcoming and s.id == upcoming.id
-
-        # CONFIRM LOGIC (STRICT 1-HOUR WINDOW)
-        can_confirm = False
-        if is_current and s.status == "pending":
-            start = timezone.localtime(s.scheduled_time)
-            end = start + timedelta(hours=1)
-            can_confirm = start <= now <= end
-
-        # FEEDS LOGIC
-        if is_current:
-            feeds = [f.name for f in s.feeds.all()]
-        elif is_upcoming:
-            feeds = [f.name for f in s.feeds.all()]
-        else:
-            feeds = []
-
-        session_list.append({
-            "id": s.id,
-            "session": s.session_number,
-            "time": format_datetime(s.scheduled_time),
-            "status": s.status,
-
-            "is_current": is_current,
-            "is_upcoming": is_upcoming,
-            "can_confirm": can_confirm,
-
-            "feeds": feeds
-        })
-
-    # ==================================================
-    # 7. PROGRESS
-    # ==================================================
+    # ----------------------------------------
+    # 6. PROGRESS
+    # ----------------------------------------
     total = len(sessions)
     completed = len([s for s in sessions if s.status == "completed"])
-
     progress = int((completed / total) * 100) if total else 0
 
-    # ==================================================
-    # 8. FINAL RESPONSE (NEVER NULL CURRENT/UPCOMING)
-    # ==================================================
     return {
-        "plan_id": plan.id,
-        "day": feeding_day.day_number,
+        "plan": plan,
+        "feeding_day": feeding_day,
+        "sessions": sessions,
+        "current": current,
+        "upcoming": upcoming,
         "progress": progress,
-
-        "current_session_id": current.id if current else sessions[0].id,
-        "upcoming_session_id": upcoming.id if upcoming else None,
-
-        "sessions": session_list
-    }
+        "now": now
+    }, None

@@ -32,6 +32,7 @@ class Pond(models.Model):
     # FISH DETAILS
     # -------------------------
     species = models.CharField(max_length=50)
+    age_group = models.CharField(max_length=50, blank=True, null=True)
     stocking_date = models.DateField()
 
     # -------------------------

@@ -61,16 +61,16 @@ class PondView(APIView):
 class PondDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self, request):
-        pond = Pond.objects.filter(owner=request.user).first()
+    def get_object(self, pk):
+        pond = Pond.objects.get(pk=pk)
 
         if not pond:
             return None
 
         return pond
 
-    def get(self, request):
-        pond = self.get_object(request)
+    def get(self, request, pk):
+        pond = self.get_object(pk)
 
         if not pond:
             return Response(
@@ -84,8 +84,8 @@ class PondDetailView(APIView):
         )
         return Response(serializer.data)
 
-    def put(self, request):
-        pond = self.get_object(request)
+    def put(self, request, pk):
+        pond = self.get_object(pk)
 
         if not pond:
             return Response(
@@ -158,85 +158,3 @@ class WaterQualityView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-# # =========================================================
-# # 🟢 POND DETAIL: GET + UPDATE
-# # =========================================================
-# class PondDetailView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_object(self, request, pk):
-#         return get_object_or_404(
-#             Pond,
-#             id=pk,
-#             farm__owner=request.user  # ✅ secure ownership
-#         )
-
-#     def get(self, request, pk):
-#         pond = self.get_object(request, pk)
-
-#         serializer = PondSerializer(
-#             pond,
-#             context={"request": request}
-#         )
-#         return Response(serializer.data)
-
-#     def put(self, request, pk):
-#         pond = self.get_object(request, pk)
-
-#         serializer = PondSerializer(
-#             pond,
-#             data=request.data,
-#             partial=True,
-#             context={"request": request}
-#         )
-
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# # =========================================================
-# # 🌊 WATER QUALITY: PER POND (NOT GLOBAL)
-# # =========================================================
-# class WaterQualityView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_pond(self, request, pond_id):
-#         return get_object_or_404(
-#             Pond,
-#             id=pond_id,
-#             farm__owner=request.user
-#         )
-
-#     # -----------------------------
-#     # GET WATER QUALITY HISTORY
-#     # -----------------------------
-#     def get(self, request, pond_id):
-#         pond = self.get_pond(request, pond_id)
-
-#         records = WaterQuality.objects.filter(
-#             pond=pond
-#         ).order_by("-recorded_at")[:20]
-
-#         serializer = WaterQualitySerializer(records, many=True)
-#         return Response(serializer.data)
-
-#     # -----------------------------
-#     # CREATE WATER QUALITY RECORD
-#     # -----------------------------
-#     def post(self, request, pond_id):
-#         pond = self.get_pond(request, pond_id)
-
-#         serializer = WaterQualitySerializer(
-#             data=request.data,
-#             context={"request": request}
-#         )
-
-#         if serializer.is_valid():
-#             serializer.save(pond=pond)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
