@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 // ✅ IMPORT LOGO
-import FishLogo from "../../assets/Fish-logo.png";
+import FishLogo from "../../assets/FiSH-logo.png";
 
 const sections = [
   {
