@@ -1,33 +1,18 @@
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from notifications.routing import websocket_urlpatterns
+import os
 
-from channels.auth import AuthMiddlewareStack
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+
+from django.core.asgi import get_asgi_application
+django_asgi_app = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from notifications.routing import websocket_urlpatterns
+from notifications.middleware import JWTAuthMiddleware
+
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-
-    "websocket": AuthMiddlewareStack(
+    "http": django_asgi_app,
+    "websocket": JWTAuthMiddleware(
         URLRouter(websocket_urlpatterns)
     ),
 })
-
-# import os
-
-# # ✅ MUST BE FIRST
-# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-
-# from django.core.asgi import get_asgi_application
-# from channels.routing import ProtocolTypeRouter, URLRouter
-# from channels.auth import AuthMiddlewareStack
-# from notifications.routing import websocket_urlpatterns
-
-# application = ProtocolTypeRouter({
-#     "http": get_asgi_application(),
-
-#     # Use AuthMiddlewareStack first (debug), not JWT yet
-#     "websocket": AuthMiddlewareStack(
-#         URLRouter(websocket_urlpatterns)
-#     ),
-# })
