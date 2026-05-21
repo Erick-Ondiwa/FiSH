@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
-import { API_URL } from "../../api";
+import { API_URL } from "../api";
 
 // ✅ IMPORT REAL-TIME HOOK
 import { useNotifications } from "./useNotifications";

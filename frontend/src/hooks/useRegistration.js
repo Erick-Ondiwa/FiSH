@@ -1,7 +1,7 @@
 // useRegistration.js
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_URL } from "../../api";
+import { API_URL } from "../api";
 import { validateStep } from "./validation";
 
 export const useRegistration = (selectedRole, onClose) => {

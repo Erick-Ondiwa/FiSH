@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DiseaseDetectionForm from "./DiseaseDetectionForm";
 import axios from "axios";
-import { API_URL } from "../../../api";
+import { API_URL } from "../../api";
 import {
   AlertCircle,
   ShieldCheck,
