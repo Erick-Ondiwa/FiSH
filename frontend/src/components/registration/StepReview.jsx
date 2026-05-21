@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { API_URL } from "../../../api";
+import { API_URL } from "../../api";
 
 const ReviewRow = ({ label, value }) => (
   <div className="flex justify-between items-start border-b border-slate-700 py-3">

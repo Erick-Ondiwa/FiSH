@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { API_URL } from "../../../api";
+import { API_URL } from "../../api";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Fish, X } from "lucide-react";

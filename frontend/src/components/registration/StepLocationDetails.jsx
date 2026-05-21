@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
-import { API_URL } from "../../../api";
+import { API_URL } from "../../api";
 
 const StepLocationDetails = ({ formData, setFormData, errors }) => {
   const [counties, setCounties] = useState([]);

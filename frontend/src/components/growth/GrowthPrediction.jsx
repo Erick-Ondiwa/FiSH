@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import { API_URL } from "../../../api";
+import { API_URL } from "../../api";
 import {
   LineChart,
   Line,

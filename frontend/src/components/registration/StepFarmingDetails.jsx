@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Layers, Fish, Clock } from "lucide-react";
-import { API_URL } from "../../../api";
+import { API_URL } from "../../api";
 
 const StepFarmingDetails = ({ formData, setFormData, errors }) => {
   const [farmingMethods, setFarmingMethods] = useState([]);
